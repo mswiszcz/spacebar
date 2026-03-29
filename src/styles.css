@@ -14,4 +14,60 @@ html, body {
 #app {
   width: 100vw;
   height: 100vh;
+  background: color-mix(in srgb, var(--bg-color, #1a1a2e) calc(var(--bg-opacity, 0.8) * 100%), transparent);
+  border-radius: var(--border-radius, 12px);
+  border: 1px solid var(--border-color, #ffffff10);
+  backdrop-filter: blur(var(--blur-radius, 20px));
 }
+
+.mascot-grid {
+  display: flex;
+  gap: 8px;
+  padding: 8px;
+  align-items: center;
+  justify-content: center;
+  min-height: 100%;
+}
+
+.mascot-grid.vertical {
+  flex-direction: column;
+}
+
+.mascot-item {
+  cursor: pointer;
+  transition: transform 0.15s ease;
+  position: relative;
+}
+
+.mascot-item:hover {
+  transform: scale(1.1);
+}
+
+.mascot-item:active {
+  transform: scale(0.95);
+}
+
+.mascot-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mascot-svg {
+  width: var(--mascot-size, 48px);
+  height: var(--mascot-size, 48px);
+  overflow: visible;
+}
+
+.mascot-label {
+  font-size: 9px;
+  color: #aaa;
+  text-align: center;
+  margin-top: 2px;
+  white-space: nowrap;
+}
+
+/* Size variants */
+.size-small .mascot-svg { --mascot-size: 32px; }
+.size-medium .mascot-svg { --mascot-size: 48px; }
+.size-large .mascot-svg { --mascot-size: 64px; }
