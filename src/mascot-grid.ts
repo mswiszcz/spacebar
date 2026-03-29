@@ -2,6 +2,7 @@ import { Session, sessionState } from "./state";
 import { getMascot, getAllMascotCSS } from "./mascots/registry";
 import { MascotState } from "./mascots/types";
 import { invoke } from "@tauri-apps/api/core";
+import { playStateSound } from "./sound";
 
 export function initMascotGrid(container: HTMLElement): void {
   // Inject mascot CSS
@@ -60,6 +61,8 @@ function createMascotElement(session: Session): HTMLElement {
   wrapper.appendChild(mascotWrapper);
   wrapper.appendChild(label);
 
+  playStateSound("entering");
+
   wrapper.addEventListener("click", () => {
     invoke("execute_click", { sessionId: session.sessionId });
   });
@@ -75,6 +78,8 @@ function createMascotElement(session: Session): HTMLElement {
 function updateMascotElement(el: HTMLElement, session: Session): void {
   const state = session.state as MascotState;
   const mascot = getMascot(session.agent);
+
+  playStateSound(state);
 
   // Remove all state classes, add current
   el.className = `mascot-item state-${state}`;
@@ -101,6 +106,7 @@ export function triggerExit(
     ) as HTMLElement | null;
 
     if (el) {
+      playStateSound("exiting");
       el.className = "mascot-item state-exiting";
       const mascot = getMascot("claude-code");
       const wrapper = el.querySelector(".mascot-wrapper");
