@@ -12,7 +12,7 @@ interface Config {
   theme: {
     backgroundColor: string;
     backgroundOpacity: number;
-    blurRadius: number;
+    vibrancyMaterial: string;
     accentColor: string;
   };
 }
@@ -62,8 +62,24 @@ async function init(): Promise<void> {
         <input type="range" id="pref-bg-opacity" min="0" max="100" value="${Math.round(config.theme.backgroundOpacity * 100)}">
       </div>
       <div class="prefs-row">
-        <label>Blur</label>
-        <input type="range" id="pref-blur" min="0" max="50" value="${config.theme.blurRadius}">
+        <label>Vibrancy</label>
+        <select id="pref-vibrancy">
+          <option value="None" ${config.theme.vibrancyMaterial === "None" ? "selected" : ""}>None</option>
+          <option value="HudWindow" ${config.theme.vibrancyMaterial === "HudWindow" ? "selected" : ""}>HUD Window</option>
+          <option value="Menu" ${config.theme.vibrancyMaterial === "Menu" ? "selected" : ""}>Menu</option>
+          <option value="Popover" ${config.theme.vibrancyMaterial === "Popover" ? "selected" : ""}>Popover</option>
+          <option value="Sidebar" ${config.theme.vibrancyMaterial === "Sidebar" ? "selected" : ""}>Sidebar</option>
+          <option value="Sheet" ${config.theme.vibrancyMaterial === "Sheet" ? "selected" : ""}>Sheet</option>
+          <option value="WindowBackground" ${config.theme.vibrancyMaterial === "WindowBackground" ? "selected" : ""}>Window</option>
+          <option value="ContentBackground" ${config.theme.vibrancyMaterial === "ContentBackground" ? "selected" : ""}>Content</option>
+          <option value="UnderWindowBackground" ${config.theme.vibrancyMaterial === "UnderWindowBackground" ? "selected" : ""}>Under Window</option>
+          <option value="Tooltip" ${config.theme.vibrancyMaterial === "Tooltip" ? "selected" : ""}>Tooltip</option>
+          <option value="Titlebar" ${config.theme.vibrancyMaterial === "Titlebar" ? "selected" : ""}>Titlebar</option>
+          <option value="HeaderView" ${config.theme.vibrancyMaterial === "HeaderView" ? "selected" : ""}>Header</option>
+          <option value="Selection" ${config.theme.vibrancyMaterial === "Selection" ? "selected" : ""}>Selection</option>
+          <option value="FullScreenUI" ${config.theme.vibrancyMaterial === "FullScreenUI" ? "selected" : ""}>Full Screen</option>
+          <option value="UnderPageBackground" ${config.theme.vibrancyMaterial === "UnderPageBackground" ? "selected" : ""}>Under Page</option>
+        </select>
       </div>
       <div class="prefs-row">
         <label>Accent</label>
@@ -104,7 +120,7 @@ async function init(): Promise<void> {
   bindCheckbox("#pref-show-tooltips", (v) => { config.showTooltips = v; save(); });
   bindColor("#pref-bg-color", (v) => { config.theme.backgroundColor = v; save(); });
   bindRange("#pref-bg-opacity", (v) => { config.theme.backgroundOpacity = v / 100; save(); });
-  bindRange("#pref-blur", (v) => { config.theme.blurRadius = v; save(); });
+  bindSelect("#pref-vibrancy", (v) => { config.theme.vibrancyMaterial = v; save(); });
   bindColor("#pref-accent-color", (v) => { config.theme.accentColor = v; save(); });
   bindCheckbox("#pref-sound-enabled", (v) => { config.sound.enabled = v; save(); });
   bindRange("#pref-sound-volume", (v) => { config.sound.volume = v / 100; save(); });

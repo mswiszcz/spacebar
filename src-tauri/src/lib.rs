@@ -35,13 +35,26 @@ pub fn run() {
             // Load saved config
             let cfg = load_config();
 
-            // Apply vibrancy with configured blur radius
-            let radius = if cfg.theme.blur_radius > 0 {
-                Some(cfg.theme.blur_radius as f64)
-            } else {
-                None
-            };
-            let _ = apply_vibrancy(&window, NSVisualEffectMaterial::HudWindow, Some(NSVisualEffectState::Active), radius);
+            // Apply vibrancy with configured material
+            if cfg.theme.vibrancy_material != "None" {
+                let mat = match cfg.theme.vibrancy_material.as_str() {
+                    "Titlebar" => NSVisualEffectMaterial::Titlebar,
+                    "Selection" => NSVisualEffectMaterial::Selection,
+                    "Menu" => NSVisualEffectMaterial::Menu,
+                    "Popover" => NSVisualEffectMaterial::Popover,
+                    "Sidebar" => NSVisualEffectMaterial::Sidebar,
+                    "HeaderView" => NSVisualEffectMaterial::HeaderView,
+                    "Sheet" => NSVisualEffectMaterial::Sheet,
+                    "WindowBackground" => NSVisualEffectMaterial::WindowBackground,
+                    "FullScreenUI" => NSVisualEffectMaterial::FullScreenUI,
+                    "Tooltip" => NSVisualEffectMaterial::Tooltip,
+                    "ContentBackground" => NSVisualEffectMaterial::ContentBackground,
+                    "UnderWindowBackground" => NSVisualEffectMaterial::UnderWindowBackground,
+                    "UnderPageBackground" => NSVisualEffectMaterial::UnderPageBackground,
+                    _ => NSVisualEffectMaterial::HudWindow,
+                };
+                let _ = apply_vibrancy(&window, mat, Some(NSVisualEffectState::Active), None);
+            }
             let _ = window.set_position(tauri::PhysicalPosition::new(
                 cfg.position.x as i32,
                 cfg.position.y as i32,

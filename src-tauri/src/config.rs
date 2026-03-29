@@ -32,7 +32,7 @@ pub struct SoundConfig {
 pub struct ThemeConfig {
     pub background_color: String,
     pub background_opacity: f64,
-    pub blur_radius: u32,
+    pub vibrancy_material: String,
     pub accent_color: String,
 }
 
@@ -52,7 +52,7 @@ impl Default for Config {
             theme: ThemeConfig {
                 background_color: "#1a1a2e".into(),
                 background_opacity: 0.8,
-                blur_radius: 20,
+                vibrancy_material: "HudWindow".into(),
                 accent_color: "#E8825A".into(),
             },
         }
@@ -95,7 +95,7 @@ mod tests {
         let json = serde_json::to_string(&config).unwrap();
         let parsed: Config = serde_json::from_str(&json).unwrap();
         assert_eq!(parsed.orientation, "horizontal");
-        assert_eq!(parsed.theme.blur_radius, 20);
+        assert_eq!(parsed.theme.vibrancy_material, "HudWindow");
         assert!(parsed.sound.enabled);
     }
 }

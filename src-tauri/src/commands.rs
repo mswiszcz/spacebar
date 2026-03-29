@@ -3,7 +3,7 @@ use crate::state::SessionStore;
 use std::process::Command;
 use std::sync::Arc;
 use tauri::{AppHandle, Manager, State};
-use window_vibrancy::{apply_vibrancy, NSVisualEffectMaterial, NSVisualEffectState};
+use window_vibrancy::{apply_vibrancy, clear_vibrancy, NSVisualEffectMaterial, NSVisualEffectState};
 
 #[tauri::command]
 pub fn execute_click(session_id: String, store: State<'_, Arc<SessionStore>>) -> Result<(), String> {
@@ -45,16 +45,40 @@ pub fn set_main_always_on_top(app: AppHandle, always_on_top: bool) -> Result<(),
         .map_err(|e| format!("Failed to set always on top: {e}"))
 }
 
+fn parse_material(name: &str) -> Option<NSVisualEffectMaterial> {
+    match name {
+        "Titlebar" => Some(NSVisualEffectMaterial::Titlebar),
+        "Selection" => Some(NSVisualEffectMaterial::Selection),
+        "Menu" => Some(NSVisualEffectMaterial::Menu),
+        "Popover" => Some(NSVisualEffectMaterial::Popover),
+        "Sidebar" => Some(NSVisualEffectMaterial::Sidebar),
+        "HeaderView" => Some(NSVisualEffectMaterial::HeaderView),
+        "Sheet" => Some(NSVisualEffectMaterial::Sheet),
+        "WindowBackground" => Some(NSVisualEffectMaterial::WindowBackground),
+        "HudWindow" => Some(NSVisualEffectMaterial::HudWindow),
+        "FullScreenUI" => Some(NSVisualEffectMaterial::FullScreenUI),
+        "Tooltip" => Some(NSVisualEffectMaterial::Tooltip),
+        "ContentBackground" => Some(NSVisualEffectMaterial::ContentBackground),
+        "UnderWindowBackground" => Some(NSVisualEffectMaterial::UnderWindowBackground),
+        "UnderPageBackground" => Some(NSVisualEffectMaterial::UnderPageBackground),
+        _ => None,
+    }
+}
+
 #[tauri::command]
-pub fn apply_window_vibrancy(app: AppHandle, blur_radius: Option<f64>) -> Result<(), String> {
+pub fn apply_window_vibrancy(app: AppHandle, material: String) -> Result<(), String> {
     let window = app
         .get_webview_window("main")
         .ok_or("Main window not found")?;
-    apply_vibrancy(
-        &window,
-        NSVisualEffectMaterial::HudWindow,
-        Some(NSVisualEffectState::Active),
-        blur_radius,
-    )
-    .map_err(|e| format!("Failed to apply vibrancy: {e}"))
+
+    if material == "None" {
+        clear_vibrancy(&window)
+            .map(|_| ())
+            .map_err(|e| format!("Failed to clear vibrancy: {e}"))
+    } else {
+        let mat = parse_material(&material)
+            .ok_or_else(|| format!("Unknown material: {material}"))?;
+        apply_vibrancy(&window, mat, Some(NSVisualEffectState::Active), None)
+            .map_err(|e| format!("Failed to apply vibrancy: {e}"))
+    }
 }

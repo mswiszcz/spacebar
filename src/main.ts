@@ -18,7 +18,7 @@ interface Config {
   theme: {
     backgroundColor: string;
     backgroundOpacity: number;
-    blurRadius: number;
+    vibrancyMaterial: string;
     accentColor: string;
   };
 }
@@ -46,9 +46,9 @@ function applyConfig(config: Config): void {
     (el as HTMLElement).style.display = config.showLabels ? "block" : "none";
   });
 
-  // Re-apply native vibrancy with new blur radius
+  // Re-apply native vibrancy with selected material
   invoke("apply_window_vibrancy", {
-    blurRadius: config.theme.blurRadius > 0 ? config.theme.blurRadius : null,
+    material: config.theme.vibrancyMaterial,
   }).catch(() => {});
 }
 
