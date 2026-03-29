@@ -85,9 +85,9 @@ function createMascotElement(session: Session): HTMLElement {
   // Transition to idle after entrance animation if no state update arrived
   setTimeout(() => {
     const current = sessionState.get(session.sessionId);
-    if (current) {
-      const targetState = current.state === "entering" ? "idle" : current.state;
-      updateMascotElement(wrapper, { ...current, state: targetState });
+    if (current && current.state === "entering") {
+      current.state = "idle";
+      updateMascotElement(wrapper, current);
     }
   }, 450);
 

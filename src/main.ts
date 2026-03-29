@@ -61,7 +61,6 @@ async function resizeWindow(): Promise<void> {
   if (!grid) return;
 
   const count = grid.children.length;
-  if (count === 0) return;
 
   const sizeMap: Record<string, number> = {
     small: 32,
@@ -70,10 +69,16 @@ async function resizeWindow(): Promise<void> {
   };
   const mascotSize = sizeMap[config.mascotSize] ?? 48;
   const labelHeight = config.showLabels ? 14 : 0;
-  const gap = 8;
+  const gap = 16;
   const padding = 16;
 
   const appWindow = getCurrentWindow();
+
+  if (count === 0) {
+    const emptySize = mascotSize + padding * 2;
+    await appWindow.setSize(new LogicalSize(emptySize, emptySize));
+    return;
+  }
 
   if (config.orientation === "horizontal") {
     const width = count * mascotSize + (count - 1) * gap + padding * 2;
