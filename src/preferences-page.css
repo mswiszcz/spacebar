@@ -1,0 +1,77 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background: #1a1a2e;
+  color: #ddd;
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 12px;
+  padding: 16px;
+  padding-top: 40px; /* space for titlebar */
+}
+
+h2 {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+.prefs-section {
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.prefs-section:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+}
+
+.prefs-section-title {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #666;
+  margin-bottom: 10px;
+}
+
+.prefs-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.prefs-row label {
+  color: #aaa;
+}
+
+.prefs-row select,
+.prefs-row input[type="range"] {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  color: #ddd;
+  padding: 2px 6px;
+  font-size: 11px;
+}
+
+.prefs-row input[type="color"] {
+  width: 28px;
+  height: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  padding: 0;
+  cursor: pointer;
+}
+
+.prefs-row input[type="range"] {
+  width: 100px;
+}
+
+.prefs-row input[type="checkbox"] {
+  accent-color: #E8825A;
+}

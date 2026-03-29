@@ -1,13 +1,23 @@
 {
   "identifier": "default",
   "description": "Default capabilities for Agent Monitor",
-  "windows": ["main"],
+  "windows": ["main", "preferences"],
   "permissions": [
     "core:default",
+    "core:window:default",
     "core:window:allow-set-size",
     "core:window:allow-set-position",
     "core:window:allow-set-always-on-top",
+    "core:window:allow-set-focus",
     "core:window:allow-center",
+    "core:window:allow-close",
+    "core:window:allow-destroy",
+    "core:window:allow-outer-position",
+    "core:webview:default",
+    "core:webview:allow-create-webview-window",
+    "core:event:default",
+    "core:event:allow-emit",
+    "core:event:allow-listen",
     {
       "identifier": "shell:allow-execute",
       "allow": [

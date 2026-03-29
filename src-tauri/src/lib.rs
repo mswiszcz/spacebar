@@ -20,6 +20,7 @@ pub fn run() {
             commands::get_config,
             commands::save_config,
             commands::get_sessions,
+            commands::set_main_always_on_top,
         ])
         .setup(move |app| {
             let window = app.get_webview_window("main").unwrap();
