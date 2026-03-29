@@ -1,0 +1,22 @@
+{
+  "identifier": "default",
+  "description": "Default capabilities for Agent Monitor",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "core:window:allow-set-size",
+    "core:window:allow-set-position",
+    "core:window:allow-set-always-on-top",
+    "core:window:allow-center",
+    {
+      "identifier": "shell:allow-execute",
+      "allow": [
+        {
+          "name": "../cli/target/release/agentmonitor",
+          "sidecar": true
+        }
+      ]
+    },
+    "shell:allow-open"
+  ]
+}

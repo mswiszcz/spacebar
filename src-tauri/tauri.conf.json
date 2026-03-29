@@ -1,0 +1,39 @@
+{
+  "productName": "Agent Monitor",
+  "version": "0.1.0",
+  "identifier": "com.agentmonitor.app",
+  "build": {
+    "frontendDist": "../dist",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "npm run build",
+    "beforeDevCommand": "npm run dev"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "Agent Monitor",
+        "width": 200,
+        "height": 80,
+        "decorations": false,
+        "transparent": true,
+        "alwaysOnTop": true,
+        "resizable": false,
+        "skipTaskbar": true
+      }
+    ],
+    "security": {
+      "csp": null
+    },
+    "macOSPrivateApi": true
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "resources": ["../public/sounds/*"]
+  },
+  "plugins": {
+    "shell": {
+      "open": true
+    }
+  }
+}
