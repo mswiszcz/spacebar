@@ -5,6 +5,7 @@ import { Session, sessionState } from "./state";
 import { initMascotGrid, triggerExit } from "./mascot-grid";
 import { initSound } from "./sound";
 import { initTooltip } from "./tooltip";
+import { initPreferences } from "./preferences";
 
 interface Config {
   orientation: string;
@@ -86,6 +87,7 @@ async function init(): Promise<void> {
   const app = document.getElementById("app")!;
   await initSound();
   initTooltip();
+  initPreferences(applyConfig);
   initMascotGrid(app);
 
   // Load and apply initial config

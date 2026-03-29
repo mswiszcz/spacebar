@@ -99,3 +99,101 @@ html, body {
   font-weight: 500;
   min-width: 50px;
 }
+
+/* Preferences Popover */
+.preferences-popover {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(20, 20, 40, 0.95);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 16px;
+  z-index: 2000;
+  color: #ddd;
+  font-size: 12px;
+  min-width: 260px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.prefs-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 600;
+  font-size: 14px;
+  margin-bottom: 12px;
+}
+
+.prefs-close {
+  background: none;
+  border: none;
+  color: #888;
+  font-size: 18px;
+  cursor: pointer;
+  padding: 0 4px;
+}
+
+.prefs-close:hover {
+  color: #fff;
+}
+
+.prefs-section {
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.prefs-section:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+}
+
+.prefs-section-title {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #666;
+  margin-bottom: 8px;
+}
+
+.prefs-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.prefs-row label {
+  color: #aaa;
+}
+
+.prefs-row select,
+.prefs-row input[type="range"] {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  color: #ddd;
+  padding: 2px 6px;
+  font-size: 11px;
+}
+
+.prefs-row input[type="color"] {
+  width: 28px;
+  height: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  padding: 0;
+  cursor: pointer;
+}
+
+.prefs-row input[type="range"] {
+  width: 100px;
+}
+
+.prefs-row input[type="checkbox"] {
+  accent-color: #E8825A;
+}
