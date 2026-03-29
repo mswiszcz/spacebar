@@ -8,7 +8,7 @@ html, body {
   background: transparent;
   overflow: hidden;
   user-select: none;
-  -webkit-app-region: drag;
+  cursor: default;
   font-family: -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
@@ -38,7 +38,6 @@ html, body {
   cursor: pointer;
   transition: transform 0.15s ease;
   position: relative;
-  -webkit-app-region: no-drag;
 }
 
 .mascot-item:hover {
