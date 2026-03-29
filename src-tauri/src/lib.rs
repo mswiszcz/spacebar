@@ -1,0 +1,164 @@
+#![allow(unexpected_cfgs)]
+
+mod blur;
+mod commands;
+mod config;
+mod server;
+mod state;
+
+use config::load_config;
+use state::SessionStore;
+use std::process::Command;
+use std::sync::Arc;
+use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
+use tauri::tray::TrayIconBuilder;
+use tauri::{AppHandle, Manager};
+use blur::set_window_blur_radius;
+
+pub fn rebuild_tray_menu(app: &AppHandle, store: &SessionStore) {
+    let sessions = store.all();
+
+    let mut items: Vec<Box<dyn tauri::menu::IsMenuItem<tauri::Wry>>> = Vec::new();
+
+    if !sessions.is_empty() {
+        let header = MenuItem::with_id(app, "agents-header", "Agents", false, None::<&str>).unwrap();
+        items.push(Box::new(header));
+
+        for session in &sessions {
+            let label = format!("{} ({}) · {}", session.agent, session.session_id, session.state);
+            let item = MenuItem::with_id(app, &session.session_id, &label, true, None::<&str>).unwrap();
+            items.push(Box::new(item));
+        }
+
+        items.push(Box::new(PredefinedMenuItem::separator(app).unwrap()));
+    }
+
+    let show = MenuItem::with_id(app, "show", "Show", true, None::<&str>).unwrap();
+    let hide = MenuItem::with_id(app, "hide", "Hide", true, None::<&str>).unwrap();
+    let separator = PredefinedMenuItem::separator(app).unwrap();
+    let quit = PredefinedMenuItem::quit(app, Some("Quit Spacebar")).unwrap();
+
+    items.push(Box::new(show));
+    items.push(Box::new(hide));
+    items.push(Box::new(separator));
+    items.push(Box::new(quit));
+
+    let refs: Vec<&dyn tauri::menu::IsMenuItem<tauri::Wry>> = items.iter().map(|i| i.as_ref()).collect();
+    let menu = Menu::with_items(app, &refs).unwrap();
+
+    if let Some(tray) = app.tray_by_id("main") {
+        let _ = tray.set_menu(Some(menu));
+    }
+}
+
+pub fn run() {
+    let store = Arc::new(SessionStore::new());
+
+    tauri::Builder::default()
+        .plugin(tauri_plugin_shell::init())
+        .plugin(tauri_plugin_dialog::init())
+        .manage(store.clone())
+        .invoke_handler(tauri::generate_handler![
+            commands::execute_click,
+            commands::get_config,
+            commands::save_config,
+            commands::get_sessions,
+            commands::set_main_always_on_top,
+            commands::set_blur_radius,
+            commands::pick_sound_file,
+        ])
+        .setup(move |app| {
+            // Hide from Dock — tray-only app
+            #[cfg(target_os = "macos")]
+            app.set_activation_policy(tauri::ActivationPolicy::Accessory);
+
+            let window = app.get_webview_window("main").unwrap();
+
+            // Load saved config
+            let cfg = load_config();
+
+            // Apply background blur (private macOS API, same as iTerm2)
+            let _ = set_window_blur_radius(&window, cfg.theme.blur_radius);
+            let _ = window.set_position(tauri::PhysicalPosition::new(
+                cfg.position.x as i32,
+                cfg.position.y as i32,
+            ));
+            let _ = window.set_always_on_top(cfg.always_on_top);
+
+            // Configure tooltip window
+            if let Some(tooltip_window) = app.get_webview_window("tooltip") {
+                let _ = tooltip_window.set_ignore_cursor_events(true);
+                let _ = tooltip_window.set_always_on_top(cfg.always_on_top);
+                let _ = set_window_blur_radius(&tooltip_window, 20);
+            }
+
+            // Build tray menu
+            let show = MenuItem::with_id(app, "show", "Show", true, None::<&str>)?;
+            let hide = MenuItem::with_id(app, "hide", "Hide", true, None::<&str>)?;
+            let separator = PredefinedMenuItem::separator(app)?;
+            let quit = PredefinedMenuItem::quit(app, Some("Quit Spacebar"))?;
+
+            let menu = Menu::with_items(app, &[&show, &hide, &separator, &quit])?;
+
+            let store_for_tray = store.clone();
+            TrayIconBuilder::with_id("main")
+                .icon(app.default_window_icon().unwrap().clone())
+                .menu(&menu)
+                .tooltip("Spacebar")
+                .on_menu_event(move |app, event| match event.id.as_ref() {
+                    "show" => {
+                        if let Some(w) = app.get_webview_window("main") {
+                            let _ = w.show();
+                            let _ = w.set_focus();
+                        }
+                    }
+                    "hide" => {
+                        if let Some(w) = app.get_webview_window("main") {
+                            let _ = w.hide();
+                        }
+                    }
+                    "agents-header" => {}
+                    id => {
+                        if let Some(session) = store_for_tray.get(id) {
+                            let _ = Command::new("sh")
+                                .arg("-c")
+                                .arg(&session.on_click)
+                                .spawn();
+                        }
+                    }
+                })
+                .on_tray_icon_event(|tray, event| {
+                    if let tauri::tray::TrayIconEvent::Click { .. } = event {
+                        if let Some(w) = tray.app_handle().get_webview_window("main") {
+                            let _ = w.show();
+                            let _ = w.set_focus();
+                        }
+                    }
+                })
+                .build(app)?;
+
+            // Start HTTP server
+            let handle = app.handle().clone();
+            let store_clone = store.clone();
+            tauri::async_runtime::spawn(async move {
+                let port = server::start_server(store_clone, handle).await;
+                println!("Spacebar server listening on port {port}");
+            });
+
+            Ok(())
+        })
+        .on_window_event(|window, event| {
+            // Hide instead of close — keep app running in tray (main window only)
+            if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                if window.label() == "main" {
+                    let _ = window.hide();
+                    api.prevent_close();
+                }
+            }
+            if let tauri::WindowEvent::Destroyed = event {
+                server::cleanup_port_file();
+            }
+        })
+        .run(tauri::generate_context!())
+        .expect("error while running tauri application");
+}

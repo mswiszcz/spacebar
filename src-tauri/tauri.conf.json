@@ -1,0 +1,60 @@
+{
+  "productName": "Spacebar",
+  "version": "0.1.0",
+  "identifier": "com.spacebar.app",
+  "build": {
+    "frontendDist": "../dist",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "npm run build",
+    "beforeDevCommand": "npm run dev"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "Spacebar",
+        "width": 200,
+        "height": 80,
+        "decorations": false,
+        "transparent": true,
+        "alwaysOnTop": true,
+        "resizable": false,
+        "skipTaskbar": true,
+        "acceptFirstMouse": true,
+        "shadow": false
+      },
+      {
+        "label": "tooltip",
+        "url": "tooltip.html",
+        "title": "",
+        "width": 200,
+        "height": 100,
+        "visible": false,
+        "decorations": false,
+        "transparent": true,
+        "alwaysOnTop": true,
+        "skipTaskbar": true,
+        "resizable": false,
+        "shadow": false,
+        "focus": false
+      }
+    ],
+    "security": {
+      "csp": null,
+      "assetProtocol": {
+        "enable": true,
+        "scope": ["**"]
+      }
+    },
+    "macOSPrivateApi": true
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "resources": ["../public/sounds/**/*"]
+  },
+  "plugins": {
+    "shell": {
+      "open": true
+    }
+  }
+}

@@ -1,0 +1,21 @@
+[package]
+name = "spacebar"
+version = "0.1.0"
+edition = "2021"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["macos-private-api", "tray-icon", "protocol-asset"] }
+tauri-plugin-shell = "2"
+tauri-plugin-dialog = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["full"] }
+axum = "0.8"
+cocoa = "0.26"
+objc = "0.2"
+core-graphics = "0.24"
+core-foundation = "0.10"
+dirs = "6"

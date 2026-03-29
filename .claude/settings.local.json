@@ -1,0 +1,35 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(/Users/mswiszcz/.claude/plugins/cache/claude-plugins-official/superpowers/5.0.6/skills/brainstorming/scripts/start-server.sh --project-dir /Users/mswiszcz/Labs/agent-montior)",
+      "WebSearch",
+      "WebFetch(domain:v2.tauri.app)",
+      "Bash(npm install:*)",
+      "Bash(cargo check:*)",
+      "Bash(cargo test:*)",
+      "WebFetch(domain:docs.rs)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(npx tsc:*)",
+      "WebFetch(domain:tauri.app)",
+      "WebFetch(domain:docs.tauri.app)",
+      "WebFetch(domain:github.com)",
+      "Bash(npm run:*)",
+      "Bash(find /Users/mswiszcz/Labs/agent-montior -maxdepth 2 -type d ! -path */node_modules* ! -path */target* ! -path */dist*)",
+      "Bash(curl -s https://raw.githubusercontent.com/gnachman/iTerm2/master/sources/iTermWindow.m)",
+      "Bash(curl -s https://raw.githubusercontent.com/nicklockwood/iVersion/master/RELEASE_NOTES.md)",
+      "Bash(curl -s https://api.github.com/search/code?q=CGSSetWindowBackgroundBlurRadius+repo:gnachman/iTerm2)",
+      "Bash(curl -s https://raw.githubusercontent.com/gnachman/iTerm2/master/sources/iTermWindowImpl.m)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(mv public/sounds/*.wav public/sounds/default/)",
+      "Bash(cp public/sounds/default/*.wav public/sounds/retro/)",
+      "Bash(cp public/sounds/default/*.wav public/sounds/mechanical/)",
+      "Bash(curl:*)",
+      "Bash(afplay /Users/mswiszcz/Labs/agent-montior/public/sounds/default/enter.wav)",
+      "Bash(afplay /Users/mswiszcz/Labs/agent-montior/public/sounds/retro/enter.wav)",
+      "Bash(afplay /Users/mswiszcz/Labs/agent-montior/public/sounds/mechanical/enter.wav)",
+      "WebFetch(domain:freesound.org)",
+      "mcp__plugin_context7_context7__resolve-library-id"
+    ]
+  }
+}

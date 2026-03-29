@@ -1,0 +1,102 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  background: color-mix(in srgb, var(--bg-color, #1a1a2e) calc(var(--bg-opacity, 0.8) * 100%), transparent);
+  overflow: hidden;
+  user-select: none;
+  cursor: default;
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+#app {
+  width: 100vw;
+  height: 100vh;
+}
+
+.mascot-grid {
+  display: flex;
+  gap: 8px;
+  padding: 8px;
+  align-items: center;
+  justify-content: center;
+  min-height: 100%;
+}
+
+.mascot-grid.vertical {
+  flex-direction: column;
+}
+
+.mascot-item {
+  cursor: pointer;
+  transition: transform 0.15s ease;
+  position: relative;
+}
+
+.mascot-item:hover {
+  transform: scale(1.1);
+}
+
+.mascot-item:active {
+  transform: scale(0.95);
+}
+
+.mascot-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mascot-svg {
+  width: var(--mascot-size, 48px);
+  height: var(--mascot-size, 48px);
+  overflow: visible;
+}
+
+.mascot-label {
+  font-size: 9px;
+  color: #aaa;
+  text-align: center;
+  margin-top: 2px;
+  white-space: nowrap;
+}
+
+/* Size variants */
+.size-small .mascot-svg { --mascot-size: 32px; }
+.size-medium .mascot-svg { --mascot-size: 48px; }
+.size-large .mascot-svg { --mascot-size: 64px; }
+
+/* Tooltip window body */
+body.tooltip-window {
+  background: transparent;
+  overflow: hidden;
+}
+
+/* Tooltip */
+.tooltip {
+  background: var(--tooltip-bg, rgba(20, 20, 40, 0.95));
+  border: 1px solid var(--tooltip-border, rgba(255, 255, 255, 0.1));
+  border-radius: var(--tooltip-radius, 8px);
+  padding: 8px 12px;
+  font-size: var(--tooltip-font-size, 11px);
+  color: var(--tooltip-text, #ddd);
+  pointer-events: none;
+  backdrop-filter: blur(var(--tooltip-blur, 10px));
+  white-space: nowrap;
+}
+
+.tooltip-row {
+  display: flex;
+  gap: 8px;
+  line-height: 1.6;
+}
+
+.tooltip-label {
+  color: var(--tooltip-label-color, #888);
+  font-weight: 500;
+  min-width: 50px;
+}
+
