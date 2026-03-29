@@ -30,11 +30,13 @@ async function openPreferences(): Promise<void> {
 
   prefsWindow = new WebviewWindow("preferences", {
     url: "preferences.html",
-    title: "Preferences",
-    width: 320,
+    title: "Settings",
+    width: 640,
     height: 480,
-    resizable: false,
+    resizable: true,
     center: true,
+    minWidth: 520,
+    minHeight: 360,
   });
 
   prefsWindow.once("tauri://destroyed", () => {

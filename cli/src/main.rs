@@ -4,7 +4,7 @@ use std::fs;
 use std::process;
 
 #[derive(Parser)]
-#[command(name = "agentmonitor", about = "CLI for Agent Monitor")]
+#[command(name = "spacebar", about = "CLI for Spacebar")]
 struct Cli {
     #[command(subcommand)]
     command: Commands,
@@ -61,10 +61,10 @@ struct RemoveBody {
 fn get_base_url() -> String {
     let port_file = dirs::home_dir()
         .expect("cannot find home directory")
-        .join(".agentmonitor.port");
+        .join(".spacebar.port");
 
     let port = fs::read_to_string(&port_file).unwrap_or_else(|_| {
-        eprintln!("Agent Monitor is not running (no port file found)");
+        eprintln!("Spacebar is not running (no port file found)");
         process::exit(1);
     });
 

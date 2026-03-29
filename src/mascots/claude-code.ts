@@ -2,8 +2,8 @@ import { MascotDefinition, MascotState } from "./types";
 
 const COLOR = "#CC785C";
 
-function body(eyes: string, extras: string = ""): string {
-  return `<svg viewBox="0 0 66 52" class="mascot-svg">
+function body(eyes: string, extras: string = "", viewBox = "0 0 66 52"): string {
+  return `<svg viewBox="${viewBox}" class="mascot-svg">
     <!-- Body -->
     <rect x="6" y="0" width="54" height="39" fill="${COLOR}" class="mascot-body"/>
     <!-- Arms -->
@@ -39,6 +39,18 @@ const EYES = {
 };
 
 const EXTRAS = {
+  keyboard: `<rect x="-4" y="55" width="74" height="18" rx="3" fill="#555" class="keyboard"/>
+             <rect x="0" y="58" width="8" height="4" rx="1" fill="#888" class="key key-1"/>
+             <rect x="10" y="58" width="8" height="4" rx="1" fill="#888" class="key key-2"/>
+             <rect x="20" y="58" width="8" height="4" rx="1" fill="#888" class="key key-3"/>
+             <rect x="30" y="58" width="8" height="4" rx="1" fill="#888" class="key key-4"/>
+             <rect x="40" y="58" width="8" height="4" rx="1" fill="#888" class="key key-5"/>
+             <rect x="50" y="58" width="8" height="4" rx="1" fill="#888" class="key key-6"/>
+             <rect x="60" y="58" width="6" height="4" rx="1" fill="#888" class="key key-8"/>
+             <rect x="4" y="64" width="8" height="4" rx="1" fill="#888" class="key key-7"/>
+             <rect x="14" y="64" width="30" height="4" rx="1" fill="#888" class="key key-space"/>
+             <rect x="46" y="64" width="8" height="4" rx="1" fill="#888" class="key key-9"/>
+             <rect x="56" y="64" width="8" height="4" rx="1" fill="#888" class="key key-10"/>`,
   thinkingDots: `<circle cx="58" cy="-4" r="2" fill="#ffd700" class="think-dot-1"/>
                  <circle cx="63" cy="-8" r="2.5" fill="#ffd700" class="think-dot-2"/>
                  <circle cx="68" cy="-12" r="3" fill="#ffd700" class="think-dot-3"/>`,
@@ -47,17 +59,21 @@ const EXTRAS = {
                <ellipse cx="2" cy="12" rx="1.2" ry="2.5" fill="#87CEEB" class="sweat-2"/>`,
   bellIcon: `<text x="56" y="0" font-size="12" class="bell-icon">&#x1F514;</text>`,
   waveArm: `<rect x="60" y="10" width="6" height="16" fill="${COLOR}" class="wave-arm"/>`,
+  sleepZzz: `<text x="52" y="-2" font-size="10" fill="#aaa" font-weight="bold" class="zzz-1">z</text>
+              <text x="60" y="-10" font-size="13" fill="#aaa" font-weight="bold" class="zzz-2">z</text>
+              <text x="66" y="-20" font-size="16" fill="#aaa" font-weight="bold" class="zzz-3">Z</text>`,
 };
 
 const states: Record<MascotState, string> = {
   idle: body(EYES.normal),
-  thinking: body(EYES.closed, EXTRAS.thinkingDots),
+  thinking: body(EYES.squint, EXTRAS.keyboard, "-4 0 74 75"),
   "needs-input": body(EYES.wide, EXTRAS.questionMark),
   error: body(EYES.x),
   compacting: body(EYES.squint, EXTRAS.sweatDrops),
   notification: body(EYES.normal, EXTRAS.bellIcon + EXTRAS.waveArm),
   entering: body(EYES.wide),
   exiting: body(EYES.closed),
+  sleeping: body(EYES.closed, EXTRAS.sleepZzz, "-4 -30 80 82"),
 };
 
 export const claudeCode: MascotDefinition = {
@@ -77,22 +93,31 @@ export const claudeCode: MascotDefinition = {
       75% { transform: translateX(4px); }
     }
 
-    /* Thinking: head wobble + dot pulse */
-    .state-thinking .mascot-svg {
-      animation: wobble 1.5s ease-in-out infinite;
+    /* Thinking: typing on keyboard */
+    .state-thinking .arm-left {
+      animation: typeLeft 0.4s ease-in-out infinite alternate;
     }
-    @keyframes wobble {
-      0%, 100% { transform: rotate(-2deg); }
-      50% { transform: rotate(2deg); }
+    .state-thinking .arm-right {
+      animation: typeRight 0.4s 0.2s ease-in-out infinite alternate;
     }
-    .think-dot-1 { animation: dotPulse 1s 0s infinite; }
-    .think-dot-2 { animation: dotPulse 1s 0.3s infinite; }
-    .think-dot-3 { animation: dotPulse 1s 0.6s infinite; }
-    @keyframes dotPulse {
-      0%, 100% { opacity: 0.3; }
-      50% { opacity: 1; }
+    @keyframes typeLeft {
+      from { transform: translateY(0); }
+      to { transform: translateY(3px); }
     }
-
+    @keyframes typeRight {
+      from { transform: translateY(0); }
+      to { transform: translateY(3px); }
+    }
+    .state-thinking .key-1 { animation: keyPress 0.8s 0s ease-in-out infinite; }
+    .state-thinking .key-3 { animation: keyPress 0.8s 0.15s ease-in-out infinite; }
+    .state-thinking .key-5 { animation: keyPress 0.8s 0.3s ease-in-out infinite; }
+    .state-thinking .key-2 { animation: keyPress 0.8s 0.45s ease-in-out infinite; }
+    .state-thinking .key-7 { animation: keyPress 0.8s 0.6s ease-in-out infinite; }
+    .state-thinking .key-4 { animation: keyPress 0.8s 0.75s ease-in-out infinite; }
+    @keyframes keyPress {
+      0%, 70%, 100% { fill: #888; transform: translateY(0); }
+      35% { fill: #bbb; transform: translateY(0.5px); }
+    }
     /* Needs input: bounce + question pulse */
     .state-needs-input .mascot-svg {
       animation: bounce 0.6s ease-in-out infinite alternate;
@@ -173,6 +198,29 @@ export const claudeCode: MascotDefinition = {
     @keyframes exitSlide {
       from { transform: translateY(0); opacity: 1; }
       to { transform: translateY(40px); opacity: 0; }
+    }
+
+    /* Sleeping: gentle breathing + floating Z's */
+    .state-sleeping .mascot-svg {
+      animation: breathe 3s ease-in-out infinite;
+    }
+    @keyframes breathe {
+      0%, 100% { transform: scaleY(1); }
+      50% { transform: scaleY(0.95); }
+    }
+    .zzz-1 {
+      animation: floatZ 2.5s 0s ease-in-out infinite;
+    }
+    .zzz-2 {
+      animation: floatZ 2.5s 0.5s ease-in-out infinite;
+    }
+    .zzz-3 {
+      animation: floatZ 2.5s 1s ease-in-out infinite;
+    }
+    @keyframes floatZ {
+      0% { opacity: 0; transform: translate(0, 0); }
+      30% { opacity: 1; }
+      100% { opacity: 0; transform: translate(5px, -10px); }
     }
   `,
 

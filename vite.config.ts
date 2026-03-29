@@ -10,6 +10,7 @@ export default defineConfig({
       input: {
         main: resolve(__dirname, "index.html"),
         preferences: resolve(__dirname, "preferences.html"),
+      tooltip: resolve(__dirname, "tooltip.html"),
       },
     },
   },

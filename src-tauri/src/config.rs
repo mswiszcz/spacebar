@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
 
@@ -25,6 +26,14 @@ pub struct Position {
 pub struct SoundConfig {
     pub enabled: bool,
     pub volume: f64,
+    #[serde(default = "default_pack")]
+    pub pack: String,
+    #[serde(default)]
+    pub overrides: HashMap<String, String>,
+}
+
+fn default_pack() -> String {
+    "default".into()
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -32,7 +41,7 @@ pub struct SoundConfig {
 pub struct ThemeConfig {
     pub background_color: String,
     pub background_opacity: f64,
-    pub vibrancy_material: String,
+    pub blur_radius: u32,
     pub accent_color: String,
 }
 
@@ -48,11 +57,13 @@ impl Default for Config {
             sound: SoundConfig {
                 enabled: true,
                 volume: 0.5,
+                pack: "default".into(),
+                overrides: HashMap::new(),
             },
             theme: ThemeConfig {
                 background_color: "#1a1a2e".into(),
                 background_opacity: 0.8,
-                vibrancy_material: "HudWindow".into(),
+                blur_radius: 20,
                 accent_color: "#E8825A".into(),
             },
         }
@@ -62,7 +73,7 @@ impl Default for Config {
 fn config_path() -> PathBuf {
     dirs::home_dir()
         .expect("cannot find home directory")
-        .join(".agentmonitor")
+        .join(".spacebar")
         .join("config.json")
 }
 
@@ -90,12 +101,20 @@ mod tests {
     use super::*;
 
     #[test]
+    fn test_sound_config_backward_compat() {
+        let json = r#"{"enabled": true, "volume": 0.5}"#;
+        let parsed: SoundConfig = serde_json::from_str(json).unwrap();
+        assert_eq!(parsed.pack, "default");
+        assert!(parsed.overrides.is_empty());
+    }
+
+    #[test]
     fn test_default_config_serializes() {
         let config = Config::default();
         let json = serde_json::to_string(&config).unwrap();
         let parsed: Config = serde_json::from_str(&json).unwrap();
         assert_eq!(parsed.orientation, "horizontal");
-        assert_eq!(parsed.theme.vibrancy_material, "HudWindow");
+        assert_eq!(parsed.theme.blur_radius, 20);
         assert!(parsed.sound.enabled);
     }
 }

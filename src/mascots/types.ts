@@ -6,7 +6,8 @@ export type MascotState =
   | "compacting"
   | "notification"
   | "entering"
-  | "exiting";
+  | "exiting"
+  | "sleeping";
 
 export interface MascotDefinition {
   svg(state: MascotState): string;

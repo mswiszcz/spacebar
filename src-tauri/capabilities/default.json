@@ -1,7 +1,7 @@
 {
   "identifier": "default",
-  "description": "Default capabilities for Agent Monitor",
-  "windows": ["main", "preferences"],
+  "description": "Default capabilities for Spacebar",
+  "windows": ["main", "preferences", "tooltip"],
   "permissions": [
     "core:default",
     "core:window:default",
@@ -16,6 +16,8 @@
     "core:window:allow-start-dragging",
     "core:window:allow-show",
     "core:window:allow-hide",
+    "core:window:allow-set-ignore-cursor-events",
+    "core:window:allow-current-monitor",
     "core:webview:default",
     "core:webview:allow-create-webview-window",
     "core:event:default",
@@ -25,11 +27,12 @@
       "identifier": "shell:allow-execute",
       "allow": [
         {
-          "name": "../cli/target/release/agentmonitor",
+          "name": "../cli/target/release/spacebar",
           "sidecar": true
         }
       ]
     },
-    "shell:allow-open"
+    "shell:allow-open",
+    "dialog:default"
   ]
 }

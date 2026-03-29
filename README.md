@@ -1,15 +1,13 @@
-# Agent Monitor
+# Spacebar
 
 A macOS menu bar app that shows animated mascots representing your running AI agents. Each mascot visually reflects what the agent is doing — thinking, waiting for input, hitting an error — so you always know the state of your agents at a glance.
 
 Built with [Tauri v2](https://v2.tauri.app), Rust, and TypeScript.
 
-![Agent Monitor concept](docs/superpowers/specs/2026-03-29-agent-monitor-design.md)
-
 ## Features
 
 - **Animated mascots** — Each agent gets a character with state-driven CSS/SVG animations (idle, thinking, needs input, error, compacting, notification)
-- **Dock-like bar** — Horizontal or vertical floating bar, draggable anywhere on screen
+- **Dock-like bar** — Horizontal or vertical floating bar, draggable anywhere on screen (Option+click mascots to drag)
 - **Click to focus** — Click a mascot to jump to that agent's terminal window
 - **Glass effect** — Native macOS vibrancy with configurable blur, opacity, and colors
 - **Sound effects** — Audio cues on state transitions (toggleable, adjustable volume)
@@ -28,8 +26,8 @@ Built with [Tauri v2](https://v2.tauri.app), Rust, and TypeScript.
 
 ```bash
 # Clone the repo
-git clone <repo-url> agent-monitor
-cd agent-monitor
+git clone <repo-url> spacebar
+cd spacebar
 
 # Install frontend dependencies
 npm install
@@ -54,27 +52,27 @@ npm run tauri build
 
 The `.app` bundle will be in `src-tauri/target/release/bundle/macos/`.
 
-The CLI binary will be at `cli/target/release/agentmonitor`.
+The CLI binary will be at `cli/target/release/spacebar`.
 
 ## CLI Usage
 
-The `agentmonitor` CLI communicates with the running app via a local HTTP API. The app writes its port to `~/.agentmonitor.port` on startup.
+The `spacebar` CLI communicates with the running app via a local HTTP API. The app writes its port to `~/.spacebar.port` on startup.
 
 ```bash
 # Register a new agent session (mascot appears with entrance animation)
-agentmonitor register \
+spacebar register \
   --agent claude-code \
   --session-id "my-session-123" \
   --on-click "wsh view focus"
 
 # Update agent state (mascot animation changes)
-agentmonitor update --session-id "my-session-123" --state thinking
+spacebar update --session-id "my-session-123" --state thinking
 
 # Remove agent session (mascot exits with slide-down animation)
-agentmonitor remove --session-id "my-session-123"
+spacebar remove --session-id "my-session-123"
 
 # Check if the app is running
-agentmonitor health
+spacebar health
 ```
 
 ### Available States
@@ -90,7 +88,7 @@ agentmonitor health
 
 ## Claude Code Hooks Setup
 
-Add these hooks to your `~/.claude/settings.json` to connect Claude Code to Agent Monitor. Replace `<PATH>` with the absolute path to the `agentmonitor` binary and `<FOCUS_CMD>` with your terminal's focus command.
+Add these hooks to your `~/.claude/settings.json` to connect Claude Code to Spacebar. Replace `<PATH>` with the absolute path to the `spacebar` binary and `<FOCUS_CMD>` with your terminal's focus command.
 
 **Terminal focus commands by app:**
 - **WaveTerm:** `wsh view focus`
@@ -107,7 +105,7 @@ Add these hooks to your `~/.claude/settings.json` to connect Claude Code to Agen
         "hooks": [
           {
             "type": "command",
-            "command": "<PATH>/agentmonitor register --agent claude-code --session-id $SESSION_ID --on-click \"<FOCUS_CMD>\""
+            "command": "<PATH>/spacebar register --agent claude-code --session-id $SESSION_ID --on-click \"<FOCUS_CMD>\""
           }
         ]
       }
@@ -118,7 +116,7 @@ Add these hooks to your `~/.claude/settings.json` to connect Claude Code to Agen
         "hooks": [
           {
             "type": "command",
-            "command": "<PATH>/agentmonitor remove --session-id $SESSION_ID"
+            "command": "<PATH>/spacebar remove --session-id $SESSION_ID"
           }
         ]
       }
@@ -129,7 +127,7 @@ Add these hooks to your `~/.claude/settings.json` to connect Claude Code to Agen
         "hooks": [
           {
             "type": "command",
-            "command": "<PATH>/agentmonitor update --session-id $SESSION_ID --state thinking"
+            "command": "<PATH>/spacebar update --session-id $SESSION_ID --state thinking"
           }
         ]
       }
@@ -140,7 +138,7 @@ Add these hooks to your `~/.claude/settings.json` to connect Claude Code to Agen
         "hooks": [
           {
             "type": "command",
-            "command": "<PATH>/agentmonitor update --session-id $SESSION_ID --state idle"
+            "command": "<PATH>/spacebar update --session-id $SESSION_ID --state idle"
           }
         ]
       }
@@ -151,7 +149,7 @@ Add these hooks to your `~/.claude/settings.json` to connect Claude Code to Agen
         "hooks": [
           {
             "type": "command",
-            "command": "<PATH>/agentmonitor update --session-id $SESSION_ID --state needs-input"
+            "command": "<PATH>/spacebar update --session-id $SESSION_ID --state needs-input"
           }
         ]
       }
@@ -162,7 +160,7 @@ Add these hooks to your `~/.claude/settings.json` to connect Claude Code to Agen
         "hooks": [
           {
             "type": "command",
-            "command": "<PATH>/agentmonitor update --session-id $SESSION_ID --state needs-input"
+            "command": "<PATH>/spacebar update --session-id $SESSION_ID --state needs-input"
           }
         ]
       }
@@ -173,7 +171,7 @@ Add these hooks to your `~/.claude/settings.json` to connect Claude Code to Agen
         "hooks": [
           {
             "type": "command",
-            "command": "<PATH>/agentmonitor register --agent claude-code --session-id $SUBAGENT_SESSION_ID --on-click \"<FOCUS_CMD>\""
+            "command": "<PATH>/spacebar register --agent claude-code --session-id $SUBAGENT_SESSION_ID --on-click \"<FOCUS_CMD>\""
           }
         ]
       }
@@ -184,7 +182,7 @@ Add these hooks to your `~/.claude/settings.json` to connect Claude Code to Agen
         "hooks": [
           {
             "type": "command",
-            "command": "<PATH>/agentmonitor update --session-id $SESSION_ID --state error"
+            "command": "<PATH>/spacebar update --session-id $SESSION_ID --state error"
           }
         ]
       }
@@ -195,7 +193,7 @@ Add these hooks to your `~/.claude/settings.json` to connect Claude Code to Agen
         "hooks": [
           {
             "type": "command",
-            "command": "<PATH>/agentmonitor update --session-id $SESSION_ID --state compacting"
+            "command": "<PATH>/spacebar update --session-id $SESSION_ID --state compacting"
           }
         ]
       }
@@ -206,7 +204,7 @@ Add these hooks to your `~/.claude/settings.json` to connect Claude Code to Agen
         "hooks": [
           {
             "type": "command",
-            "command": "<PATH>/agentmonitor update --session-id $SESSION_ID --state notification"
+            "command": "<PATH>/spacebar update --session-id $SESSION_ID --state notification"
           }
         ]
       }
@@ -226,7 +224,7 @@ Right-click the bar to open the preferences window.
 | **Sound** | Enable/disable, volume |
 | **Behavior** | Always on top |
 
-Settings are stored in `~/.agentmonitor/config.json` and apply immediately.
+Settings are stored in `~/.spacebar/config.json` and apply immediately.
 
 ## Adding New Agent Types
 
@@ -235,14 +233,14 @@ The mascot system is designed to be extended. To add a new agent mascot:
 1. Create `src/mascots/your-agent.ts` implementing the `MascotDefinition` interface
 2. Export SVG markup for each state and CSS animation keyframes
 3. Register it in `src/mascots/registry.ts`
-4. Use the agent name in CLI calls: `agentmonitor register --agent your-agent ...`
+4. Use the agent name in CLI calls: `spacebar register --agent your-agent ...`
 
 See `src/mascots/claude-code.ts` for a complete example.
 
 ## Project Structure
 
 ```
-agent-monitor/
+spacebar/
 ├── src/                    # Frontend (TypeScript)
 │   ├── main.ts             # Entry point, Tauri event listeners
 │   ├── state.ts            # Session state store

@@ -49,6 +49,7 @@ async fn register(
         .store
         .register(req.agent, req.session_id, req.on_click);
     let _ = state.app_handle.emit("session-added", &session);
+    crate::rebuild_tray_menu(&state.app_handle, &state.store);
     Ok(Json(session))
 }
 
@@ -59,6 +60,7 @@ async fn update(
     match state.store.update(&req.session_id, req.state) {
         Some(session) => {
             let _ = state.app_handle.emit("session-updated", &session);
+            crate::rebuild_tray_menu(&state.app_handle, &state.store);
             Ok(Json(session))
         }
         None => Err(StatusCode::NOT_FOUND),
@@ -72,6 +74,7 @@ async fn remove(
     match state.store.remove(&req.session_id) {
         Some(session) => {
             let _ = state.app_handle.emit("session-removed", &session);
+            crate::rebuild_tray_menu(&state.app_handle, &state.store);
             Ok(Json(session))
         }
         None => Err(StatusCode::NOT_FOUND),
@@ -92,7 +95,7 @@ pub async fn start_server(store: Arc<SessionStore>, app_handle: AppHandle) -> u1
     let port = listener.local_addr().unwrap().port();
 
     // Write port file
-    let port_file = dirs::home_dir().unwrap().join(".agentmonitor.port");
+    let port_file = dirs::home_dir().unwrap().join(".spacebar.port");
     std::fs::write(&port_file, port.to_string()).unwrap();
 
     tokio::spawn(async move {
@@ -104,6 +107,6 @@ pub async fn start_server(store: Arc<SessionStore>, app_handle: AppHandle) -> u1
 
 /// Remove port file on shutdown
 pub fn cleanup_port_file() {
-    let port_file = dirs::home_dir().unwrap().join(".agentmonitor.port");
+    let port_file = dirs::home_dir().unwrap().join(".spacebar.port");
     let _ = std::fs::remove_file(port_file);
 }

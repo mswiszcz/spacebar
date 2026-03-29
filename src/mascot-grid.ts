@@ -5,6 +5,9 @@ import { invoke } from "@tauri-apps/api/core";
 import { playStateSound } from "./sound";
 import { showTooltip, hideTooltip } from "./tooltip";
 
+const SLEEP_DELAY_MS = 30_000;
+const sleepTimers = new Map<string, number>();
+
 export function initMascotGrid(container: HTMLElement): void {
   // Inject mascot CSS
   const style = document.createElement("style");
@@ -25,6 +28,7 @@ function render(grid: HTMLElement, sessions: Session[]): void {
   Array.from(grid.children).forEach((el) => {
     const id = (el as HTMLElement).dataset.sessionId;
     if (id && !currentIds.has(id)) {
+      clearSleepTimer(id);
       el.remove();
     }
   });
@@ -90,6 +94,23 @@ function createMascotElement(session: Session): HTMLElement {
   return wrapper;
 }
 
+function clearSleepTimer(sessionId: string): void {
+  const timer = sleepTimers.get(sessionId);
+  if (timer) {
+    clearTimeout(timer);
+    sleepTimers.delete(sessionId);
+  }
+}
+
+function startSleepTimer(el: HTMLElement, session: Session): void {
+  clearSleepTimer(session.sessionId);
+  const timer = window.setTimeout(() => {
+    sleepTimers.delete(session.sessionId);
+    updateMascotElement(el, { ...session, state: "sleeping" });
+  }, SLEEP_DELAY_MS);
+  sleepTimers.set(session.sessionId, timer);
+}
+
 function updateMascotElement(el: HTMLElement, session: Session): void {
   const state = session.state as MascotState;
   const mascot = getMascot(session.agent);
@@ -108,6 +129,12 @@ function updateMascotElement(el: HTMLElement, session: Session): void {
   const label = el.querySelector(".mascot-label");
   if (label) {
     label.textContent = state;
+  }
+
+  // Start sleep timer when idle, clear on any other state
+  clearSleepTimer(session.sessionId);
+  if (state === "idle") {
+    startSleepTimer(el, session);
   }
 }
 

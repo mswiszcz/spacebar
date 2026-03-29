@@ -3,7 +3,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWindow, LogicalSize } from "@tauri-apps/api/window";
 import { Session, sessionState } from "./state";
 import { initMascotGrid, triggerExit } from "./mascot-grid";
-import { initSound } from "./sound";
+import { initSound, updateSoundSettings } from "./sound";
 import { initTooltip } from "./tooltip";
 import { initPreferences } from "./preferences";
 
@@ -14,11 +14,11 @@ interface Config {
   showLabels: boolean;
   showTooltips: boolean;
   position: { x: number; y: number };
-  sound: { enabled: boolean; volume: number };
+  sound: { enabled: boolean; volume: number; pack: string; overrides: Record<string, string> };
   theme: {
     backgroundColor: string;
     backgroundOpacity: number;
-    vibrancyMaterial: string;
+    blurRadius: number;
     accentColor: string;
   };
 }
@@ -46,10 +46,13 @@ function applyConfig(config: Config): void {
     (el as HTMLElement).style.display = config.showLabels ? "block" : "none";
   });
 
-  // Re-apply native vibrancy with selected material
-  invoke("apply_window_vibrancy", {
-    material: config.theme.vibrancyMaterial,
+  // Re-apply native blur radius
+  invoke("set_blur_radius", {
+    radius: config.theme.blurRadius,
   }).catch(() => {});
+
+  // Update sound settings
+  updateSoundSettings(config.sound.enabled, config.sound.volume, config.sound.pack, config.sound.overrides);
 }
 
 async function resizeWindow(): Promise<void> {
@@ -86,7 +89,7 @@ async function resizeWindow(): Promise<void> {
 async function init(): Promise<void> {
   const app = document.getElementById("app")!;
   await initSound();
-  initTooltip();
+  await initTooltip();
   initPreferences(applyConfig);
   initMascotGrid(app);
 
@@ -126,13 +129,19 @@ async function init(): Promise<void> {
   });
 
   // Enable dragging from anywhere on the window
+  // Alt/Option + click on mascots also drags
   document.addEventListener("mousedown", (e) => {
     const target = e.target as HTMLElement;
+    const isMascot = target.closest(".mascot-item");
+
+    if (isMascot && !e.altKey) {
+      return;
+    }
     if (
-      target.closest(".mascot-item") ||
-      target.closest("input") ||
-      target.closest("select") ||
-      target.closest("button")
+      !isMascot &&
+      (target.closest("input") ||
+        target.closest("select") ||
+        target.closest("button"))
     ) {
       return;
     }
