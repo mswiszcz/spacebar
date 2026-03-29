@@ -33,8 +33,6 @@ pub struct ThemeConfig {
     pub background_color: String,
     pub background_opacity: f64,
     pub blur_radius: u32,
-    pub border_radius: u32,
-    pub border_color: String,
     pub accent_color: String,
 }
 
@@ -55,8 +53,6 @@ impl Default for Config {
                 background_color: "#1a1a2e".into(),
                 background_opacity: 0.8,
                 blur_radius: 20,
-                border_radius: 12,
-                border_color: "#ffffff10".into(),
                 accent_color: "#E8825A".into(),
             },
         }

@@ -19,8 +19,6 @@ interface Config {
     backgroundColor: string;
     backgroundOpacity: number;
     blurRadius: number;
-    borderRadius: number;
-    borderColor: string;
     accentColor: string;
   };
 }
@@ -38,9 +36,6 @@ function applyConfig(config: Config): void {
   const root = document.documentElement;
   root.style.setProperty("--bg-color", config.theme.backgroundColor);
   root.style.setProperty("--bg-opacity", String(config.theme.backgroundOpacity));
-  root.style.setProperty("--blur-radius", `${config.theme.blurRadius}px`);
-  root.style.setProperty("--border-radius", `${config.theme.borderRadius}px`);
-  root.style.setProperty("--border-color", config.theme.borderColor);
   root.style.setProperty("--accent-color", config.theme.accentColor);
 
   // Apply size class
@@ -50,6 +45,11 @@ function applyConfig(config: Config): void {
   document.querySelectorAll(".mascot-label").forEach((el) => {
     (el as HTMLElement).style.display = config.showLabels ? "block" : "none";
   });
+
+  // Re-apply native vibrancy with new blur radius
+  invoke("apply_window_vibrancy", {
+    blurRadius: config.theme.blurRadius > 0 ? config.theme.blurRadius : null,
+  }).catch(() => {});
 }
 
 async function resizeWindow(): Promise<void> {

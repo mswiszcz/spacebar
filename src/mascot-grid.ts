@@ -78,9 +78,13 @@ function createMascotElement(session: Session): HTMLElement {
     hideTooltip();
   });
 
-  // Transition to actual state after entrance animation
+  // Transition to idle after entrance animation if no state update arrived
   setTimeout(() => {
-    updateMascotElement(wrapper, session);
+    const current = sessionState.get(session.sessionId);
+    if (current) {
+      const targetState = current.state === "entering" ? "idle" : current.state;
+      updateMascotElement(wrapper, { ...current, state: targetState });
+    }
   }, 450);
 
   return wrapper;

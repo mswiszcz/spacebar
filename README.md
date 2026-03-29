@@ -296,4 +296,4 @@ Contributions are welcome! Here's how to get started:
 
 ## License
 
-[PolyForm Noncommercial 1.0.0](LICENSE) — free to use, modify, and share for any noncommercial purpose. You can use Agent Monitor as a tool while doing commercial work, but you cannot sell Agent Monitor itself.
+[Apache License 2.0](LICENSE) — free to use, modify, and distribute under the terms of the Apache License 2.0.

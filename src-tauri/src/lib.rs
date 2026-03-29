@@ -9,7 +9,7 @@ use std::sync::Arc;
 use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
 use tauri::tray::TrayIconBuilder;
 use tauri::Manager;
-use window_vibrancy::{apply_vibrancy, NSVisualEffectMaterial};
+use window_vibrancy::{apply_vibrancy, NSVisualEffectMaterial, NSVisualEffectState};
 
 pub fn run() {
     let store = Arc::new(SessionStore::new());
@@ -23,6 +23,7 @@ pub fn run() {
             commands::save_config,
             commands::get_sessions,
             commands::set_main_always_on_top,
+            commands::apply_window_vibrancy,
         ])
         .setup(move |app| {
             // Hide from Dock — tray-only app
@@ -31,11 +32,16 @@ pub fn run() {
 
             let window = app.get_webview_window("main").unwrap();
 
-            // Apply vibrancy
-            let _ = apply_vibrancy(&window, NSVisualEffectMaterial::HudWindow, None, None);
-
-            // Load saved position
+            // Load saved config
             let cfg = load_config();
+
+            // Apply vibrancy with configured blur radius
+            let radius = if cfg.theme.blur_radius > 0 {
+                Some(cfg.theme.blur_radius as f64)
+            } else {
+                None
+            };
+            let _ = apply_vibrancy(&window, NSVisualEffectMaterial::HudWindow, Some(NSVisualEffectState::Active), radius);
             let _ = window.set_position(tauri::PhysicalPosition::new(
                 cfg.position.x as i32,
                 cfg.position.y as i32,

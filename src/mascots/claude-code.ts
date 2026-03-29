@@ -1,66 +1,63 @@
 import { MascotDefinition, MascotState } from "./types";
 
-function face(eyes: string, mouth: string, extras: string = ""): string {
-  return `<svg viewBox="0 0 48 56" class="mascot-svg">
+const COLOR = "#CC785C";
+
+function body(eyes: string, extras: string = ""): string {
+  return `<svg viewBox="0 0 66 52" class="mascot-svg">
     <!-- Body -->
-    <ellipse cx="24" cy="22" rx="16" ry="15" fill="#E8825A" class="mascot-body"/>
+    <rect x="6" y="0" width="54" height="39" fill="${COLOR}" class="mascot-body"/>
+    <!-- Arms -->
+    <rect x="0" y="13" width="6" height="13" fill="${COLOR}" class="arm-left"/>
+    <rect x="60" y="13" width="6" height="13" fill="${COLOR}" class="arm-right"/>
     <!-- Eyes -->
-    ${eyes}
-    <!-- Mouth -->
-    ${mouth}
+    <g class="eyes">${eyes}</g>
     <!-- Legs -->
-    <rect x="16" y="37" width="5" height="9" rx="2.5" fill="#D4744E" class="mascot-leg-left"/>
-    <rect x="27" y="37" width="5" height="9" rx="2.5" fill="#D4744E" class="mascot-leg-right"/>
+    <rect x="6" y="39" width="6" height="13" fill="${COLOR}" class="leg leg-1"/>
+    <rect x="18" y="39" width="6" height="13" fill="${COLOR}" class="leg leg-2"/>
+    <rect x="42" y="39" width="6" height="13" fill="${COLOR}" class="leg leg-3"/>
+    <rect x="54" y="39" width="6" height="13" fill="${COLOR}" class="leg leg-4"/>
     <!-- Extras -->
     ${extras}
   </svg>`;
 }
 
 const EYES = {
-  normal: `<circle cx="18" cy="19" r="2.5" fill="#2a1a0e"/>
-           <circle cx="30" cy="19" r="2.5" fill="#2a1a0e"/>`,
-  wide: `<circle cx="18" cy="19" r="3.5" fill="#2a1a0e"/>
-         <circle cx="30" cy="19" r="3.5" fill="#2a1a0e"/>
-         <circle cx="19" cy="18" r="1.2" fill="white"/>
-         <circle cx="31" cy="18" r="1.2" fill="white"/>`,
-  closed: `<line x1="15" y1="19" x2="21" y2="19" stroke="#2a1a0e" stroke-width="2" stroke-linecap="round"/>
-           <line x1="27" y1="19" x2="33" y2="19" stroke="#2a1a0e" stroke-width="2" stroke-linecap="round"/>`,
-  x: `<line x1="15" y1="16" x2="21" y2="22" stroke="#2a1a0e" stroke-width="2" stroke-linecap="round"/>
-      <line x1="21" y1="16" x2="15" y2="22" stroke="#2a1a0e" stroke-width="2" stroke-linecap="round"/>
-      <line x1="27" y1="16" x2="33" y2="22" stroke="#2a1a0e" stroke-width="2" stroke-linecap="round"/>
-      <line x1="33" y1="16" x2="27" y2="22" stroke="#2a1a0e" stroke-width="2" stroke-linecap="round"/>`,
-  squint: `<path d="M15 18 Q18 21 21 18" stroke="#2a1a0e" stroke-width="2" fill="none" stroke-linecap="round"/>
-           <path d="M27 18 Q30 21 33 18" stroke="#2a1a0e" stroke-width="2" fill="none" stroke-linecap="round"/>`,
-};
-
-const MOUTHS = {
-  smile: `<path d="M20 26 Q24 30 28 26" stroke="#2a1a0e" stroke-width="1.5" fill="none" stroke-linecap="round"/>`,
-  open: `<ellipse cx="24" cy="27" rx="3.5" ry="2.5" fill="#2a1a0e"/>`,
-  flat: `<line x1="20" y1="27" x2="28" y2="27" stroke="#2a1a0e" stroke-width="1.5" stroke-linecap="round"/>`,
-  frown: `<path d="M20 28 Q24 24 28 28" stroke="#2a1a0e" stroke-width="1.5" fill="none" stroke-linecap="round"/>`,
-  small: `<circle cx="24" cy="27" r="1.5" fill="#2a1a0e"/>`,
+  normal: `<rect x="12" y="13" width="6" height="6.5" fill="black" class="eye eye-l"/>
+           <rect x="48" y="13" width="6" height="6.5" fill="black" class="eye eye-r"/>`,
+  wide: `<rect x="12" y="11" width="6" height="9" fill="black" class="eye eye-l"/>
+         <rect x="48" y="11" width="6" height="9" fill="black" class="eye eye-r"/>
+         <rect x="13" y="12" width="2" height="3" fill="white" class="eye-glint"/>
+         <rect x="49" y="12" width="2" height="3" fill="white" class="eye-glint"/>`,
+  closed: `<rect x="12" y="16" width="6" height="2" fill="black" class="eye eye-l"/>
+           <rect x="48" y="16" width="6" height="2" fill="black" class="eye eye-r"/>`,
+  x: `<line x1="12" y1="13" x2="18" y2="19.5" stroke="black" stroke-width="2"/>
+      <line x1="18" y1="13" x2="12" y2="19.5" stroke="black" stroke-width="2"/>
+      <line x1="48" y1="13" x2="54" y2="19.5" stroke="black" stroke-width="2"/>
+      <line x1="54" y1="13" x2="48" y2="19.5" stroke="black" stroke-width="2"/>`,
+  squint: `<rect x="12" y="15" width="6" height="3" fill="black" class="eye eye-l"/>
+           <rect x="48" y="15" width="6" height="3" fill="black" class="eye eye-r"/>`,
 };
 
 const EXTRAS = {
-  thinkingDots: `<circle cx="38" cy="8" r="2" fill="#ffd700" class="think-dot-1"/>
-                 <circle cx="43" cy="5" r="2.5" fill="#ffd700" class="think-dot-2"/>
-                 <circle cx="48" cy="2" r="3" fill="#ffd700" class="think-dot-3"/>`,
-  questionMark: `<text x="38" y="10" font-size="14" fill="#e0b956" class="question-mark">?</text>`,
-  sweatDrops: `<ellipse cx="40" cy="14" rx="1.5" ry="3" fill="#87CEEB" class="sweat-1"/>
-               <ellipse cx="8" cy="18" rx="1.2" ry="2.5" fill="#87CEEB" class="sweat-2"/>`,
-  bellIcon: `<text x="36" y="12" font-size="12" class="bell-icon">🔔</text>`,
-  waveArm: `<rect x="38" y="18" width="4" height="10" rx="2" fill="#D4744E" class="wave-arm"/>`,
+  thinkingDots: `<circle cx="58" cy="-4" r="2" fill="#ffd700" class="think-dot-1"/>
+                 <circle cx="63" cy="-8" r="2.5" fill="#ffd700" class="think-dot-2"/>
+                 <circle cx="68" cy="-12" r="3" fill="#ffd700" class="think-dot-3"/>`,
+  questionMark: `<text x="56" y="-2" font-size="14" fill="#e0b956" font-weight="bold" class="question-mark">?</text>`,
+  sweatDrops: `<ellipse cx="62" cy="8" rx="1.5" ry="3" fill="#87CEEB" class="sweat-1"/>
+               <ellipse cx="2" cy="12" rx="1.2" ry="2.5" fill="#87CEEB" class="sweat-2"/>`,
+  bellIcon: `<text x="56" y="0" font-size="12" class="bell-icon">&#x1F514;</text>`,
+  waveArm: `<rect x="60" y="10" width="6" height="16" fill="${COLOR}" class="wave-arm"/>`,
 };
 
 const states: Record<MascotState, string> = {
-  idle: face(EYES.normal, MOUTHS.smile),
-  thinking: face(EYES.closed, MOUTHS.small, EXTRAS.thinkingDots),
-  "needs-input": face(EYES.wide, MOUTHS.open, EXTRAS.questionMark),
-  error: face(EYES.x, MOUTHS.frown),
-  compacting: face(EYES.squint, MOUTHS.flat, EXTRAS.sweatDrops),
-  notification: face(EYES.normal, MOUTHS.open, EXTRAS.bellIcon + EXTRAS.waveArm),
-  entering: face(EYES.wide, MOUTHS.open),
-  exiting: face(EYES.closed, MOUTHS.smile),
+  idle: body(EYES.normal),
+  thinking: body(EYES.closed, EXTRAS.thinkingDots),
+  "needs-input": body(EYES.wide, EXTRAS.questionMark),
+  error: body(EYES.x),
+  compacting: body(EYES.squint, EXTRAS.sweatDrops),
+  notification: body(EYES.normal, EXTRAS.bellIcon + EXTRAS.waveArm),
+  entering: body(EYES.wide),
+  exiting: body(EYES.closed),
 };
 
 export const claudeCode: MascotDefinition = {
@@ -69,13 +66,15 @@ export const claudeCode: MascotDefinition = {
   },
 
   css: `
-    /* Idle: gentle breathing */
-    .state-idle .mascot-body {
-      animation: breathe 3s ease-in-out infinite;
+    /* Idle: eyes look left → center → right → center */
+    .state-idle .eyes {
+      animation: lookAround 3s ease-in-out infinite;
     }
-    @keyframes breathe {
-      0%, 100% { transform: scaleY(1); }
-      50% { transform: scaleY(1.03); }
+    @keyframes lookAround {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-4px); }
+      50% { transform: translateX(0); }
+      75% { transform: translateX(4px); }
     }
 
     /* Thinking: head wobble + dot pulse */
@@ -114,7 +113,10 @@ export const claudeCode: MascotDefinition = {
     .state-error .mascot-svg {
       animation: shake 0.3s ease-in-out infinite;
     }
-    .state-error .mascot-body {
+    .state-error .mascot-body,
+    .state-error .arm-left,
+    .state-error .arm-right,
+    .state-error .leg {
       fill: #cc4444;
     }
     @keyframes shake {
@@ -140,7 +142,7 @@ export const claudeCode: MascotDefinition = {
 
     /* Notification: wave arm + bell */
     .wave-arm {
-      transform-origin: 38px 18px;
+      transform-origin: 60px 10px;
       animation: wave 0.5s ease-in-out infinite alternate;
     }
     @keyframes wave {
@@ -176,7 +178,7 @@ export const claudeCode: MascotDefinition = {
 
   metadata: {
     name: "Claude Code",
-    defaultColor: "#E8825A",
-    size: { width: 48, height: 56 },
+    defaultColor: COLOR,
+    size: { width: 66, height: 52 },
   },
 };

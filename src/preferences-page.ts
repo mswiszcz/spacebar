@@ -13,8 +13,6 @@ interface Config {
     backgroundColor: string;
     backgroundOpacity: number;
     blurRadius: number;
-    borderRadius: number;
-    borderColor: string;
     accentColor: string;
   };
 }
@@ -68,14 +66,6 @@ async function init(): Promise<void> {
         <input type="range" id="pref-blur" min="0" max="50" value="${config.theme.blurRadius}">
       </div>
       <div class="prefs-row">
-        <label>Corner Radius</label>
-        <input type="range" id="pref-border-radius" min="0" max="30" value="${config.theme.borderRadius}">
-      </div>
-      <div class="prefs-row">
-        <label>Border Color</label>
-        <input type="color" id="pref-border-color" value="${config.theme.borderColor.slice(0, 7)}">
-      </div>
-      <div class="prefs-row">
         <label>Accent</label>
         <input type="color" id="pref-accent-color" value="${config.theme.accentColor}">
       </div>
@@ -115,8 +105,6 @@ async function init(): Promise<void> {
   bindColor("#pref-bg-color", (v) => { config.theme.backgroundColor = v; save(); });
   bindRange("#pref-bg-opacity", (v) => { config.theme.backgroundOpacity = v / 100; save(); });
   bindRange("#pref-blur", (v) => { config.theme.blurRadius = v; save(); });
-  bindRange("#pref-border-radius", (v) => { config.theme.borderRadius = v; save(); });
-  bindColor("#pref-border-color", (v) => { config.theme.borderColor = v; save(); });
   bindColor("#pref-accent-color", (v) => { config.theme.accentColor = v; save(); });
   bindCheckbox("#pref-sound-enabled", (v) => { config.sound.enabled = v; save(); });
   bindRange("#pref-sound-volume", (v) => { config.sound.volume = v / 100; save(); });

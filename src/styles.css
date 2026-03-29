@@ -5,7 +5,7 @@
 }
 
 html, body {
-  background: transparent;
+  background: color-mix(in srgb, var(--bg-color, #1a1a2e) calc(var(--bg-opacity, 0.8) * 100%), transparent);
   overflow: hidden;
   user-select: none;
   cursor: default;
@@ -15,10 +15,6 @@ html, body {
 #app {
   width: 100vw;
   height: 100vh;
-  background: color-mix(in srgb, var(--bg-color, #1a1a2e) calc(var(--bg-opacity, 0.8) * 100%), transparent);
-  border-radius: var(--border-radius, 12px);
-  border: 1px solid var(--border-color, #ffffff10);
-  backdrop-filter: blur(var(--blur-radius, 20px));
 }
 
 .mascot-grid {
