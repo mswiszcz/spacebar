@@ -6,6 +6,8 @@ mod state;
 use config::load_config;
 use state::SessionStore;
 use std::sync::Arc;
+use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
+use tauri::tray::TrayIconBuilder;
 use tauri::Manager;
 use window_vibrancy::{apply_vibrancy, NSVisualEffectMaterial};
 
@@ -23,6 +25,10 @@ pub fn run() {
             commands::set_main_always_on_top,
         ])
         .setup(move |app| {
+            // Hide from Dock — tray-only app
+            #[cfg(target_os = "macos")]
+            app.set_activation_policy(tauri::ActivationPolicy::Accessory);
+
             let window = app.get_webview_window("main").unwrap();
 
             // Apply vibrancy
@@ -36,6 +42,42 @@ pub fn run() {
             ));
             let _ = window.set_always_on_top(cfg.always_on_top);
 
+            // Build tray menu
+            let show = MenuItem::with_id(app, "show", "Show", true, None::<&str>)?;
+            let hide = MenuItem::with_id(app, "hide", "Hide", true, None::<&str>)?;
+            let separator = PredefinedMenuItem::separator(app)?;
+            let quit = PredefinedMenuItem::quit(app, Some("Quit Agent Monitor"))?;
+
+            let menu = Menu::with_items(app, &[&show, &hide, &separator, &quit])?;
+
+            TrayIconBuilder::new()
+                .icon(app.default_window_icon().unwrap().clone())
+                .menu(&menu)
+                .tooltip("Agent Monitor")
+                .on_menu_event(|app, event| match event.id.as_ref() {
+                    "show" => {
+                        if let Some(w) = app.get_webview_window("main") {
+                            let _ = w.show();
+                            let _ = w.set_focus();
+                        }
+                    }
+                    "hide" => {
+                        if let Some(w) = app.get_webview_window("main") {
+                            let _ = w.hide();
+                        }
+                    }
+                    _ => {}
+                })
+                .on_tray_icon_event(|tray, event| {
+                    if let tauri::tray::TrayIconEvent::Click { .. } = event {
+                        if let Some(w) = tray.app_handle().get_webview_window("main") {
+                            let _ = w.show();
+                            let _ = w.set_focus();
+                        }
+                    }
+                })
+                .build(app)?;
+
             // Start HTTP server
             let handle = app.handle().clone();
             let store_clone = store.clone();
@@ -46,7 +88,12 @@ pub fn run() {
 
             Ok(())
         })
-        .on_window_event(|_window, event| {
+        .on_window_event(|window, event| {
+            // Hide instead of close — keep app running in tray
+            if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                let _ = window.hide();
+                api.prevent_close();
+            }
             if let tauri::WindowEvent::Destroyed = event {
                 server::cleanup_port_file();
             }
