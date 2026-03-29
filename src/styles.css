@@ -71,3 +71,31 @@ html, body {
 .size-small .mascot-svg { --mascot-size: 32px; }
 .size-medium .mascot-svg { --mascot-size: 48px; }
 .size-large .mascot-svg { --mascot-size: 64px; }
+
+/* Tooltip */
+.tooltip {
+  position: fixed;
+  transform: translateX(-50%) translateY(-100%);
+  background: rgba(20, 20, 40, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 11px;
+  color: #ddd;
+  pointer-events: none;
+  z-index: 1000;
+  backdrop-filter: blur(10px);
+  white-space: nowrap;
+}
+
+.tooltip-row {
+  display: flex;
+  gap: 8px;
+  line-height: 1.6;
+}
+
+.tooltip-label {
+  color: #888;
+  font-weight: 500;
+  min-width: 50px;
+}

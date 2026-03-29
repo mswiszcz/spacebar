@@ -3,6 +3,7 @@ import { getMascot, getAllMascotCSS } from "./mascots/registry";
 import { MascotState } from "./mascots/types";
 import { invoke } from "@tauri-apps/api/core";
 import { playStateSound } from "./sound";
+import { showTooltip, hideTooltip } from "./tooltip";
 
 export function initMascotGrid(container: HTMLElement): void {
   // Inject mascot CSS
@@ -65,6 +66,16 @@ function createMascotElement(session: Session): HTMLElement {
 
   wrapper.addEventListener("click", () => {
     invoke("execute_click", { sessionId: session.sessionId });
+  });
+
+  wrapper.addEventListener("mouseenter", () => {
+    const currentSession = sessionState.get(session.sessionId);
+    if (currentSession) {
+      showTooltip(currentSession, wrapper);
+    }
+  });
+  wrapper.addEventListener("mouseleave", () => {
+    hideTooltip();
   });
 
   // Transition to actual state after entrance animation

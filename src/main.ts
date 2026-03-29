@@ -4,6 +4,7 @@ import { getCurrentWindow, LogicalSize } from "@tauri-apps/api/window";
 import { Session, sessionState } from "./state";
 import { initMascotGrid, triggerExit } from "./mascot-grid";
 import { initSound } from "./sound";
+import { initTooltip } from "./tooltip";
 
 interface Config {
   orientation: string;
@@ -84,6 +85,7 @@ async function resizeWindow(): Promise<void> {
 async function init(): Promise<void> {
   const app = document.getElementById("app")!;
   await initSound();
+  initTooltip();
   initMascotGrid(app);
 
   // Load and apply initial config
