@@ -125,6 +125,24 @@ async function init(): Promise<void> {
     }
   });
 
+  // Enable dragging from anywhere on the window
+  // startDragging() hands off to OS — click events still fire for taps
+  document.addEventListener("mousedown", (e) => {
+    const target = e.target as HTMLElement;
+    // Don't drag from preferences popover or form controls
+    if (
+      target.closest(".preferences-popover") ||
+      target.closest("input") ||
+      target.closest("select") ||
+      target.closest("button")
+    ) {
+      return;
+    }
+    if (e.button === 0) {
+      getCurrentWindow().startDragging();
+    }
+  });
+
   // Save window position on move
   await listen("tauri://move", async () => {
     const appWindow = getCurrentWindow();
