@@ -1,3 +1,5 @@
+mod commands;
+mod config;
 mod server;
 mod state;
 
@@ -10,6 +12,12 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
         .manage(store.clone())
+        .invoke_handler(tauri::generate_handler![
+            commands::execute_click,
+            commands::get_config,
+            commands::save_config,
+            commands::get_sessions,
+        ])
         .setup(move |app| {
             let handle = app.handle().clone();
             let store_clone = store.clone();
