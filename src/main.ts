@@ -115,6 +115,8 @@ function applyConfig(config: Config): void {
   updateSoundSettings(config.sound.enabled, config.sound.volume, config.sound.pack, config.sound.overrides, config.sound.muted ?? []);
 }
 
+let _snapConfig: { enabled: boolean; edgePadding: number; snappedEdge: string | null } | null = null;
+
 async function resizeWindow(): Promise<void> {
   const grid = document.querySelector(".mascot-grid") as HTMLElement;
   if (!grid) return;
@@ -126,6 +128,38 @@ async function resizeWindow(): Promise<void> {
     await appWindow.setSize(
       new LogicalSize(Math.max(width, 64), Math.max(height, 64))
     );
+
+    // Re-center on snapped edge after resize
+    if (_snapConfig?.snappedEdge) {
+      const monitor = await currentMonitor();
+      if (!monitor) return;
+      const size = await appWindow.outerSize();
+      let x: number, y: number;
+      const edge = _snapConfig.snappedEdge;
+      const padding = _snapConfig.edgePadding * monitor.scaleFactor;
+      switch (edge) {
+        case "top":
+          x = monitor.position.x + Math.round((monitor.size.width - size.width) / 2);
+          y = monitor.position.y + padding;
+          break;
+        case "bottom":
+          x = monitor.position.x + Math.round((monitor.size.width - size.width) / 2);
+          y = monitor.position.y + monitor.size.height - size.height - padding;
+          break;
+        case "left":
+          x = monitor.position.x + padding;
+          y = monitor.position.y + Math.round((monitor.size.height - size.height) / 2);
+          break;
+        case "right":
+          x = monitor.position.x + monitor.size.width - size.width - padding;
+          y = monitor.position.y + Math.round((monitor.size.height - size.height) / 2);
+          break;
+        default:
+          return;
+      }
+      await appWindow.setPosition(new PhysicalPosition(x, y));
+      await invoke("save_position", { x, y });
+    }
   });
 }
 
@@ -138,10 +172,12 @@ async function init(): Promise<void> {
 
   // Load and apply initial config
   let config = await invoke<Config>("get_config");
+  _snapConfig = config.snap;
   applyConfig(config);
 
   await listen<Config>("config-changed", (event) => {
     config = event.payload;
+    _snapConfig = event.payload.snap;
     applyConfig(config);
   });
 
