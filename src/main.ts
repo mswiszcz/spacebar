@@ -63,13 +63,11 @@ async function resizeWindow(): Promise<void> {
   if (!grid) return;
 
   const appWindow = getCurrentWindow();
-  const pad = 16;
-
   requestAnimationFrame(async () => {
     const width = grid.scrollWidth;
     const height = grid.scrollHeight;
     await appWindow.setSize(
-      new LogicalSize(Math.max(width + pad, 64), Math.max(height + pad, 64))
+      new LogicalSize(Math.max(width, 64), Math.max(height, 64))
     );
   });
 }

@@ -69,7 +69,6 @@ async fn register(
     // Show the main window when an agent registers
     if let Some(w) = state.app_handle.get_webview_window("main") {
         let _ = w.show();
-        let _ = w.set_focus();
     }
     let _ = state.app_handle.emit("session-added", &session);
     if is_new_group {
