@@ -8,6 +8,7 @@ import { showTooltip, hideTooltip } from "./tooltip";
 const SLEEP_DELAY_MS = 30_000;
 const sleepTimers = new Map<string, number>();
 const silentUpdates = new Set<string>();
+const lastKnownState = new Map<string, string>();
 
 export function markSilentUpdate(sessionId: string): void {
   silentUpdates.add(sessionId);
@@ -139,6 +140,7 @@ function renderSessionsInGroup(
     const id = (el as HTMLElement).dataset.sessionId;
     if (id && !currentIds.has(id)) {
       clearSleepTimer(id);
+      lastKnownState.delete(id);
       el.remove();
     }
   });
@@ -176,6 +178,11 @@ function createMascotElement(session: Session): HTMLElement {
   wrapper.appendChild(mascotWrapper);
   wrapper.appendChild(label);
 
+  lastKnownState.set(session.sessionId, session.state);
+  if (session.state === "idle") {
+    startSleepTimer(wrapper, session);
+  }
+
   wrapper.addEventListener("click", () => {
     invoke("execute_click", { sessionId: session.sessionId });
   });
@@ -212,6 +219,10 @@ function startSleepTimer(el: HTMLElement, session: Session): void {
 
 function updateMascotElement(el: HTMLElement, session: Session): void {
   const state = session.state as MascotState;
+  const prev = lastKnownState.get(session.sessionId);
+  if (prev === state) return;
+  lastKnownState.set(session.sessionId, state);
+
   const mascot = getMascot(session.agent);
 
   const silent = silentUpdates.has(session.sessionId);

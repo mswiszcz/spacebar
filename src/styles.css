@@ -19,7 +19,7 @@ html, body {
 
 .mascot-grid {
   display: inline-flex;
-  gap: 32px;
+  gap: 12px;
   padding: 8px;
   align-items: center;
 }

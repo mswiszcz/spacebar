@@ -1,6 +1,6 @@
 {
   "productName": "Spacebar",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "identifier": "com.spacebar.app",
   "build": {
     "frontendDist": "../dist",
@@ -20,7 +20,8 @@
         "resizable": false,
         "skipTaskbar": true,
         "acceptFirstMouse": true,
-        "shadow": false
+        "shadow": false,
+        "focus": false
       },
       {
         "label": "tooltip",
