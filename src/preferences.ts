@@ -10,6 +10,11 @@ export function initPreferences(onChange: (config: Config) => void): void {
     onChange(event.payload);
   });
 
+  // Open preferences from tray menu
+  listen("open-preferences", async () => {
+    await openPreferences();
+  });
+
   document.addEventListener("contextmenu", async (e) => {
     e.preventDefault();
     await openPreferences();

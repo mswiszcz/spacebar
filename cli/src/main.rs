@@ -23,6 +23,8 @@ enum Commands {
         session_id: String,
         #[arg(long)]
         on_click: String,
+        #[arg(long)]
+        group: Option<String>,
     },
     /// Update an agent's state
     Update {
@@ -46,6 +48,8 @@ struct RegisterBody {
     agent: String,
     session_id: String,
     on_click: String,
+    pwd: Option<String>,
+    display_name: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -132,15 +136,19 @@ fn main() {
             agent,
             session_id,
             on_click,
+            group,
         } => {
             let base_url = match get_base_url() {
                 Some(url) if is_app_reachable(&url) => url,
                 _ => launch_and_wait(),
             };
+            let pwd = std::env::var("PWD").ok();
             let body = RegisterBody {
                 agent,
                 session_id,
                 on_click,
+                pwd,
+                display_name: group,
             };
             ureq::post(format!("{base_url}/register"))
                 .send_json(&body)

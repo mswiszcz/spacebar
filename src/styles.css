@@ -19,7 +19,7 @@ html, body {
 
 .mascot-grid {
   display: flex;
-  gap: 16px;
+  gap: 32px;
   padding: 8px;
   align-items: center;
   justify-content: center;
@@ -28,6 +28,57 @@ html, body {
 
 .mascot-grid.vertical {
   flex-direction: column;
+}
+
+/* Group containers */
+.mascot-group {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  padding: 6px 8px;
+}
+
+.mascot-group.anonymous {
+  border-color: transparent;
+  background: transparent;
+}
+
+.group-label {
+  font-size: 8px;
+  color: rgba(255, 255, 255, 0.45);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+  min-height: 12px;
+  cursor: default;
+}
+
+.mascot-group.anonymous .group-label {
+  min-height: 0;
+  margin-bottom: 0;
+}
+
+.group-mascots {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.mascot-grid.vertical .group-mascots {
+  flex-direction: column;
+}
+
+.group-rename-input {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 1px 4px;
+  outline: none;
+  width: 100%;
 }
 
 .mascot-item {

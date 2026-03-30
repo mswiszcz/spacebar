@@ -14,6 +14,8 @@ pub struct Config {
     pub position: Position,
     pub sound: SoundConfig,
     pub theme: ThemeConfig,
+    #[serde(default)]
+    pub group_renames: HashMap<String, String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -66,6 +68,7 @@ impl Default for Config {
                 blur_radius: 20,
                 accent_color: "#E8825A".into(),
             },
+            group_renames: HashMap::new(),
         }
     }
 }

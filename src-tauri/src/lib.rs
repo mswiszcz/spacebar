@@ -12,22 +12,37 @@ use std::process::Command;
 use std::sync::Arc;
 use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
 use tauri::tray::TrayIconBuilder;
-use tauri::{AppHandle, Manager};
+use tauri::{AppHandle, Emitter, Manager};
 use blur::set_window_blur_radius;
 
 pub fn rebuild_tray_menu(app: &AppHandle, store: &SessionStore) {
-    let sessions = store.all();
+    let groups = store.all_groups();
 
     let mut items: Vec<Box<dyn tauri::menu::IsMenuItem<tauri::Wry>>> = Vec::new();
 
-    if !sessions.is_empty() {
-        let header = MenuItem::with_id(app, "agents-header", "Agents", false, None::<&str>).unwrap();
-        items.push(Box::new(header));
+    for group in &groups {
+        if let Some(ref name) = group.display_name {
+            let header = MenuItem::with_id(
+                app,
+                &format!("group-{}", group.group_id),
+                name,
+                false,
+                None::<&str>,
+            )
+            .unwrap();
+            items.push(Box::new(header));
+        }
 
-        for session in &sessions {
-            let label = format!("{} ({}) · {}", session.agent, session.session_id, session.state);
-            let item = MenuItem::with_id(app, &session.session_id, &label, true, None::<&str>).unwrap();
-            items.push(Box::new(item));
+        for sid in &group.session_ids {
+            if let Some(session) = store.get(sid) {
+                let label = if group.display_name.is_some() {
+                    format!("  {} ({}) · {}", session.agent, session.session_id, session.state)
+                } else {
+                    format!("{} ({}) · {}", session.agent, session.session_id, session.state)
+                };
+                let item = MenuItem::with_id(app, &session.session_id, &label, true, None::<&str>).unwrap();
+                items.push(Box::new(item));
+            }
         }
 
         items.push(Box::new(PredefinedMenuItem::separator(app).unwrap()));
@@ -35,11 +50,13 @@ pub fn rebuild_tray_menu(app: &AppHandle, store: &SessionStore) {
 
     let show = MenuItem::with_id(app, "show", "Show", true, None::<&str>).unwrap();
     let hide = MenuItem::with_id(app, "hide", "Hide", true, None::<&str>).unwrap();
+    let preferences = MenuItem::with_id(app, "preferences", "Preferences...", true, Some("cmd+,")).unwrap();
     let separator = PredefinedMenuItem::separator(app).unwrap();
     let quit = PredefinedMenuItem::quit(app, Some("Quit Spacebar")).unwrap();
 
     items.push(Box::new(show));
     items.push(Box::new(hide));
+    items.push(Box::new(preferences));
     items.push(Box::new(separator));
     items.push(Box::new(quit));
 
@@ -63,6 +80,8 @@ pub fn run() {
             commands::get_config,
             commands::save_config,
             commands::get_sessions,
+            commands::get_groups,
+            commands::rename_group,
             commands::set_main_always_on_top,
             commands::set_blur_radius,
             commands::pick_sound_file,
@@ -73,6 +92,9 @@ pub fn run() {
             app.set_activation_policy(tauri::ActivationPolicy::Accessory);
 
             let window = app.get_webview_window("main").unwrap();
+
+            // Start with window hidden — it will show when the first agent registers
+            let _ = window.hide();
 
             // Load saved config
             let cfg = load_config();
@@ -95,10 +117,11 @@ pub fn run() {
             // Build tray menu
             let show = MenuItem::with_id(app, "show", "Show", true, None::<&str>)?;
             let hide = MenuItem::with_id(app, "hide", "Hide", true, None::<&str>)?;
+            let preferences = MenuItem::with_id(app, "preferences", "Preferences...", true, Some("cmd+,"))?;
             let separator = PredefinedMenuItem::separator(app)?;
             let quit = PredefinedMenuItem::quit(app, Some("Quit Spacebar"))?;
 
-            let menu = Menu::with_items(app, &[&show, &hide, &separator, &quit])?;
+            let menu = Menu::with_items(app, &[&show, &hide, &preferences, &separator, &quit])?;
 
             let store_for_tray = store.clone();
             TrayIconBuilder::with_id("main")
@@ -107,9 +130,12 @@ pub fn run() {
                 .tooltip("Spacebar")
                 .on_menu_event(move |app, event| match event.id.as_ref() {
                     "show" => {
-                        if let Some(w) = app.get_webview_window("main") {
-                            let _ = w.show();
-                            let _ = w.set_focus();
+                        // Only show window if there are active agents
+                        if !store_for_tray.all().is_empty() {
+                            if let Some(w) = app.get_webview_window("main") {
+                                let _ = w.show();
+                                let _ = w.set_focus();
+                            }
                         }
                     }
                     "hide" => {
@@ -117,7 +143,10 @@ pub fn run() {
                             let _ = w.hide();
                         }
                     }
-                    "agents-header" => {}
+                    "preferences" => {
+                        let _ = app.emit("open-preferences", ());
+                    }
+                    id if id.starts_with("group-") => {}
                     id => {
                         if let Some(session) = store_for_tray.get(id) {
                             let _ = Command::new("sh")
@@ -127,11 +156,15 @@ pub fn run() {
                         }
                     }
                 })
-                .on_tray_icon_event(|tray, event| {
+                .on_tray_icon_event(move |tray, event| {
                     if let tauri::tray::TrayIconEvent::Click { .. } = event {
-                        if let Some(w) = tray.app_handle().get_webview_window("main") {
-                            let _ = w.show();
-                            let _ = w.set_focus();
+                        // Only show window if there are active agents
+                        let store = tray.app_handle().state::<Arc<SessionStore>>();
+                        if !store.all().is_empty() {
+                            if let Some(w) = tray.app_handle().get_webview_window("main") {
+                                let _ = w.show();
+                                let _ = w.set_focus();
+                            }
                         }
                     }
                 })

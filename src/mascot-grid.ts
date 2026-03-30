@@ -1,4 +1,4 @@
-import { Session, sessionState } from "./state";
+import { Session, Group, sessionState } from "./state";
 import { getMascot, getAllMascotCSS } from "./mascots/registry";
 import { MascotState } from "./mascots/types";
 import { invoke } from "@tauri-apps/api/core";
@@ -9,7 +9,6 @@ const SLEEP_DELAY_MS = 30_000;
 const sleepTimers = new Map<string, number>();
 
 export function initMascotGrid(container: HTMLElement): void {
-  // Inject mascot CSS
   const style = document.createElement("style");
   style.textContent = getAllMascotCSS();
   document.head.appendChild(style);
@@ -18,14 +17,120 @@ export function initMascotGrid(container: HTMLElement): void {
   grid.className = "mascot-grid";
   container.appendChild(grid);
 
-  sessionState.subscribe((sessions) => render(grid, sessions));
+  sessionState.subscribe(() => renderGroups(grid));
+  sessionState.subscribeGroups(() => renderGroups(grid));
 }
 
-function render(grid: HTMLElement, sessions: Session[]): void {
+function renderGroups(grid: HTMLElement): void {
+  const groups = sessionState.getAllGroups();
+  const currentGroupIds = new Set(groups.map((g) => g.groupId));
+
+  // Remove departed groups
+  Array.from(grid.querySelectorAll(".mascot-group")).forEach((el) => {
+    const gid = (el as HTMLElement).dataset.groupId;
+    if (gid && !currentGroupIds.has(gid)) {
+      el.remove();
+    }
+  });
+
+  // Add or update groups
+  for (const group of groups) {
+    let groupEl = grid.querySelector(
+      `[data-group-id="${group.groupId}"]`
+    ) as HTMLElement | null;
+
+    if (!groupEl) {
+      groupEl = createGroupElement(group);
+      grid.appendChild(groupEl);
+    } else {
+      updateGroupLabel(groupEl, group);
+    }
+
+    const mascotContainer = groupEl.querySelector(
+      ".group-mascots"
+    ) as HTMLElement;
+    const groupSessions = group.sessionIds
+      .map((sid) => sessionState.get(sid))
+      .filter(Boolean) as Session[];
+    renderSessionsInGroup(mascotContainer, groupSessions);
+  }
+}
+
+function createGroupElement(group: Group): HTMLElement {
+  const container = document.createElement("div");
+  container.className =
+    group.groupId === "anonymous" ? "mascot-group anonymous" : "mascot-group";
+  container.dataset.groupId = group.groupId;
+
+  const label = document.createElement("div");
+  label.className = "group-label";
+  label.textContent = group.displayName ?? "";
+  container.appendChild(label);
+
+  if (group.groupId !== "anonymous") {
+    label.addEventListener("contextmenu", (e) => {
+      e.preventDefault();
+      startInlineRename(label, group);
+    });
+  }
+
+  const mascots = document.createElement("div");
+  mascots.className = "group-mascots";
+  container.appendChild(mascots);
+
+  return container;
+}
+
+function updateGroupLabel(groupEl: HTMLElement, group: Group): void {
+  const label = groupEl.querySelector(".group-label");
+  if (label && !label.querySelector("input")) {
+    label.textContent = group.displayName ?? "";
+  }
+}
+
+function startInlineRename(label: HTMLElement, group: Group): void {
+  const currentText = label.textContent ?? "";
+  const input = document.createElement("input");
+  input.type = "text";
+  input.className = "group-rename-input";
+  input.value = currentText;
+
+  label.textContent = "";
+  label.appendChild(input);
+  input.focus();
+  input.select();
+
+  const confirm = () => {
+    const newName = input.value.trim();
+    if (newName && newName !== currentText) {
+      invoke("rename_group", {
+        groupId: group.groupId,
+        displayName: newName,
+      });
+    }
+    label.textContent = newName || currentText;
+  };
+
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      confirm();
+    } else if (e.key === "Escape") {
+      label.textContent = currentText;
+    }
+  });
+
+  input.addEventListener("blur", confirm);
+}
+
+function renderSessionsInGroup(
+  container: HTMLElement,
+  sessions: Session[]
+): void {
   const currentIds = new Set(sessions.map((s) => s.sessionId));
 
-  // Remove departed sessions
-  Array.from(grid.children).forEach((el) => {
+  // Remove departed
+  Array.from(container.children).forEach((el) => {
     const id = (el as HTMLElement).dataset.sessionId;
     if (id && !currentIds.has(id)) {
       clearSleepTimer(id);
@@ -33,15 +138,15 @@ function render(grid: HTMLElement, sessions: Session[]): void {
     }
   });
 
-  // Add or update sessions
+  // Add or update
   sessions.forEach((session) => {
-    let el = grid.querySelector(
+    let el = container.querySelector(
       `[data-session-id="${session.sessionId}"]`
     ) as HTMLElement | null;
 
     if (!el) {
       el = createMascotElement(session);
-      grid.appendChild(el);
+      container.appendChild(el);
     } else {
       updateMascotElement(el, session);
     }
@@ -50,14 +155,14 @@ function render(grid: HTMLElement, sessions: Session[]): void {
 
 function createMascotElement(session: Session): HTMLElement {
   const wrapper = document.createElement("div");
-  wrapper.className = `mascot-item state-entering`;
+  wrapper.className = `mascot-item state-idle`;
   wrapper.dataset.sessionId = session.sessionId;
 
   const mascotWrapper = document.createElement("div");
   mascotWrapper.className = "mascot-wrapper";
 
   const mascot = getMascot(session.agent);
-  mascotWrapper.innerHTML = mascot.svg("entering" as MascotState);
+  mascotWrapper.innerHTML = mascot.svg("idle" as MascotState);
 
   const label = document.createElement("div");
   label.className = "mascot-label";
@@ -65,8 +170,6 @@ function createMascotElement(session: Session): HTMLElement {
 
   wrapper.appendChild(mascotWrapper);
   wrapper.appendChild(label);
-
-  playStateSound("entering");
 
   wrapper.addEventListener("click", () => {
     invoke("execute_click", { sessionId: session.sessionId });
@@ -81,15 +184,6 @@ function createMascotElement(session: Session): HTMLElement {
   wrapper.addEventListener("mouseleave", () => {
     hideTooltip();
   });
-
-  // Transition to idle after entrance animation if no state update arrived
-  setTimeout(() => {
-    const current = sessionState.get(session.sessionId);
-    if (current && current.state === "entering") {
-      current.state = "idle";
-      updateMascotElement(wrapper, current);
-    }
-  }, 450);
 
   return wrapper;
 }
@@ -117,7 +211,6 @@ function updateMascotElement(el: HTMLElement, session: Session): void {
 
   playStateSound(state);
 
-  // Remove all state classes, add current
   el.className = `mascot-item state-${state}`;
   el.dataset.sessionId = session.sessionId;
 
@@ -131,7 +224,6 @@ function updateMascotElement(el: HTMLElement, session: Session): void {
     label.textContent = state;
   }
 
-  // Start sleep timer when idle, clear on any other state
   clearSleepTimer(session.sessionId);
   if (state === "idle") {
     startSleepTimer(el, session);

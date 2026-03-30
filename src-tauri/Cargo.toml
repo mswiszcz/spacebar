@@ -1,6 +1,6 @@
 [package]
 name = "spacebar-app"
-version = "0.1.2"
+version = "0.2.0"
 edition = "2021"
 
 [build-dependencies]
@@ -19,3 +19,4 @@ objc = "0.2"
 core-graphics = "0.24"
 core-foundation = "0.10"
 dirs = "6"
+sha2 = "0.10"

@@ -1,7 +1,7 @@
 import { listen } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWindow, LogicalSize } from "@tauri-apps/api/window";
-import { Session, sessionState } from "./state";
+import { Session, Group, sessionState } from "./state";
 import { initMascotGrid, triggerExit } from "./mascot-grid";
 import { initSound, updateSoundSettings } from "./sound";
 import { initTooltip } from "./tooltip";
@@ -56,39 +56,19 @@ function applyConfig(config: Config): void {
 }
 
 async function resizeWindow(): Promise<void> {
-  const config = await invoke<Config>("get_config");
   const grid = document.querySelector(".mascot-grid") as HTMLElement;
   if (!grid) return;
 
-  const count = grid.children.length;
-
-  const sizeMap: Record<string, number> = {
-    small: 32,
-    medium: 48,
-    large: 64,
-  };
-  const mascotSize = sizeMap[config.mascotSize] ?? 48;
-  const labelHeight = config.showLabels ? 14 : 0;
-  const gap = 16;
-  const padding = 16;
-
   const appWindow = getCurrentWindow();
+  const pad = 16;
 
-  if (count === 0) {
-    const emptySize = mascotSize + padding * 2;
-    await appWindow.setSize(new LogicalSize(emptySize, emptySize));
-    return;
-  }
-
-  if (config.orientation === "horizontal") {
-    const width = count * mascotSize + (count - 1) * gap + padding * 2;
-    const height = mascotSize + labelHeight + padding * 2;
-    await appWindow.setSize(new LogicalSize(width, height));
-  } else {
-    const width = mascotSize + padding * 2;
-    const height = count * (mascotSize + labelHeight) + (count - 1) * gap + padding * 2;
-    await appWindow.setSize(new LogicalSize(width, height));
-  }
+  requestAnimationFrame(async () => {
+    const width = grid.scrollWidth;
+    const height = grid.scrollHeight;
+    await appWindow.setSize(
+      new LogicalSize(Math.max(width + pad, 64), Math.max(height + pad, 64))
+    );
+  });
 }
 
 async function init(): Promise<void> {
@@ -102,14 +82,16 @@ async function init(): Promise<void> {
   const config = await invoke<Config>("get_config");
   applyConfig(config);
 
-  // Load existing sessions (in case frontend reloads)
+  // Load existing groups and sessions (in case frontend reloads)
+  const existingGroups = await invoke<Group[]>("get_groups");
+  existingGroups.forEach((g) => sessionState.addGroup(g));
+
   const existing = await invoke<Session[]>("get_sessions");
   existing.forEach((s) => sessionState.add(s));
 
-  // Resize on session changes
-  sessionState.subscribe(() => {
-    resizeWindow();
-  });
+  // Resize on session or group changes
+  sessionState.subscribe(() => resizeWindow());
+  sessionState.subscribeGroups(() => resizeWindow());
 
   if (existing.length > 0) {
     resizeWindow();
@@ -131,6 +113,18 @@ async function init(): Promise<void> {
         sessionState.remove(event.payload.sessionId);
       });
     }
+  });
+
+  await listen<Group>("group-added", (event) => {
+    sessionState.addGroup(event.payload);
+  });
+
+  await listen<Group>("group-updated", (event) => {
+    sessionState.updateGroup(event.payload);
+  });
+
+  await listen<{ groupId: string }>("group-removed", (event) => {
+    sessionState.removeGroup(event.payload.groupId);
   });
 
   // Enable dragging from anywhere on the window
