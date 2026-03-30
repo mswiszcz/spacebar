@@ -1,6 +1,6 @@
 {
   "productName": "Spacebar",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "identifier": "com.spacebar.app",
   "build": {
     "frontendDist": "../dist",
@@ -26,8 +26,8 @@
         "label": "tooltip",
         "url": "tooltip.html",
         "title": "",
-        "width": 200,
-        "height": 100,
+        "width": 500,
+        "height": 200,
         "visible": false,
         "decorations": false,
         "transparent": true,
