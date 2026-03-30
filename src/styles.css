@@ -18,12 +18,10 @@ html, body {
 }
 
 .mascot-grid {
-  display: flex;
+  display: inline-flex;
   gap: 32px;
   padding: 8px;
   align-items: center;
-  justify-content: center;
-  min-height: 100%;
 }
 
 .mascot-grid.vertical {

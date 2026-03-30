@@ -8,7 +8,7 @@ interface Config {
   showLabels: boolean;
   showTooltips: boolean;
   position: { x: number; y: number };
-  sound: { enabled: boolean; volume: number; pack: string; overrides: Record<string, string> };
+  sound: { enabled: boolean; volume: number; pack: string; overrides: Record<string, string>; muted: string[] };
   theme: {
     backgroundColor: string;
     backgroundOpacity: number;
@@ -41,6 +41,7 @@ function applyAccent(hex: string): void {
 
 async function init(): Promise<void> {
   const config = await invoke<Config>("get_config");
+  const version = await invoke<string>("get_version");
   applyAccent(config.theme.accentColor);
   const root = document.getElementById("prefs-root")!;
 
@@ -60,7 +61,7 @@ async function init(): Promise<void> {
         ${renderAppearancePage(config)}
         ${renderSoundPage(config)}
         ${renderBehaviorPage(config)}
-        ${renderAboutPage()}
+        ${renderAboutPage(version)}
       </main>
     </div>
   `;
@@ -271,7 +272,7 @@ function renderBehaviorPage(config: Config): string {
   `;
 }
 
-function renderAboutPage(): string {
+function renderAboutPage(version: string): string {
   return `
     <div class="prefs-page" data-page="about">
       <div class="prefs-page-title">About</div>
@@ -279,7 +280,8 @@ function renderAboutPage(): string {
         <div class="about-info">
           <strong>Spacebar</strong><br>
           A desktop companion that visualizes your AI agent sessions.<br><br>
-          Built with Tauri + TypeScript.
+          Built with Tauri + TypeScript.<br>
+          <span class="about-version">v${version}</span>
         </div>
       </div>
     </div>
@@ -325,30 +327,43 @@ function resolveSoundUrl(state: string, pack: string, overrides: Record<string, 
 }
 
 function renderSoundSlots(config: Config, save: () => Promise<void>): void {
+  if (!config.sound.muted) config.sound.muted = [];
   const container = document.getElementById("sound-slots")!;
   container.innerHTML = SOUND_STATES.map(({ key, label }) => {
     const isOverridden = !!config.sound.overrides[key];
+    const isMuted = config.sound.muted.includes(key);
     const source = isOverridden
       ? config.sound.overrides[key].split("/").pop()
       : "Pack default";
     return `
-      <div class="sound-slot" data-state="${key}">
+      <div class="sound-slot${isMuted ? " sound-slot-muted" : ""}" data-state="${key}">
+        <label class="sound-slot-mute-toggle">
+          <input type="checkbox" data-action="mute" ${isMuted ? "" : "checked"}>
+          <span class="sound-slot-mute-slider"></span>
+        </label>
         <span class="sound-slot-label">${label}</span>
         <span class="sound-slot-source" title="${isOverridden ? config.sound.overrides[key] : ""}">${source}</span>
-        <button class="sound-slot-btn" data-action="play" title="Preview">&#9654;</button>
-        <button class="sound-slot-btn" data-action="pick" title="Choose file">&#128194;</button>
-        ${isOverridden ? `<button class="sound-slot-btn sound-slot-reset" data-action="reset" title="Reset to pack">&#10005;</button>` : ""}
+        <button class="sound-slot-btn" data-action="play" title="Preview"${isMuted ? " disabled" : ""}>&#9654;</button>
+        <button class="sound-slot-btn" data-action="pick" title="Choose file"${isMuted ? " disabled" : ""}>&#128194;</button>
+        ${isOverridden ? `<button class="sound-slot-btn sound-slot-reset" data-action="reset" title="Reset to pack"${isMuted ? " disabled" : ""}>&#10005;</button>` : ""}
       </div>`;
   }).join("");
 
   container.onclick = async (e) => {
-    const btn = (e.target as HTMLElement).closest("[data-action]") as HTMLElement | null;
+    const target = e.target as HTMLElement;
+    const btn = target.closest("[data-action]") as HTMLElement | null;
     if (!btn) return;
     const slot = btn.closest(".sound-slot") as HTMLElement;
     const state = slot.dataset.state!;
     const action = btn.dataset.action;
 
-    if (action === "play") {
+    if (action === "mute") {
+      const idx = config.sound.muted.indexOf(state);
+      if (idx >= 0) config.sound.muted.splice(idx, 1);
+      else config.sound.muted.push(state);
+      await save();
+      renderSoundSlots(config, save);
+    } else if (action === "play") {
       const url = resolveSoundUrl(state, config.sound.pack, config.sound.overrides);
       const audio = new Audio(url);
       audio.volume = config.sound.volume;

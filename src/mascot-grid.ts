@@ -7,6 +7,11 @@ import { showTooltip, hideTooltip } from "./tooltip";
 
 const SLEEP_DELAY_MS = 30_000;
 const sleepTimers = new Map<string, number>();
+const silentUpdates = new Set<string>();
+
+export function markSilentUpdate(sessionId: string): void {
+  silentUpdates.add(sessionId);
+}
 
 export function initMascotGrid(container: HTMLElement): void {
   const style = document.createElement("style");
@@ -209,7 +214,9 @@ function updateMascotElement(el: HTMLElement, session: Session): void {
   const state = session.state as MascotState;
   const mascot = getMascot(session.agent);
 
-  playStateSound(state);
+  const silent = silentUpdates.has(session.sessionId);
+  silentUpdates.delete(session.sessionId);
+  playStateSound(state, silent);
 
   el.className = `mascot-item state-${state}`;
   el.dataset.sessionId = session.sessionId;

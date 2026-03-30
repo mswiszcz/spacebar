@@ -5,7 +5,7 @@ use axum::{
     routing::{get, post},
     Json, Router,
 };
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tauri::{AppHandle, Emitter, Manager};
 use tokio::net::TcpListener;
@@ -31,6 +31,16 @@ pub struct RegisterRequest {
 pub struct UpdateRequest {
     pub session_id: String,
     pub state: String,
+    #[serde(default)]
+    pub no_sound: bool,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct SessionUpdateEvent {
+    #[serde(flatten)]
+    session: Session,
+    no_sound: bool,
 }
 
 #[derive(Deserialize)]
@@ -77,7 +87,8 @@ async fn update(
 ) -> Result<Json<Session>, StatusCode> {
     match state.store.update(&req.session_id, req.state) {
         Some(session) => {
-            let _ = state.app_handle.emit("session-updated", &session);
+            let event = SessionUpdateEvent { session: session.clone(), no_sound: req.no_sound };
+            let _ = state.app_handle.emit("session-updated", &event);
             crate::rebuild_tray_menu(&state.app_handle, &state.store);
             Ok(Json(session))
         }

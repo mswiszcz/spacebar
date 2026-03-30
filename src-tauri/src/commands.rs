@@ -90,6 +90,19 @@ pub fn rename_group(
 }
 
 #[tauri::command]
+pub fn save_position(x: f64, y: f64) {
+    let mut cfg = config::load_config();
+    cfg.position.x = x;
+    cfg.position.y = y;
+    config::save_config(&cfg);
+}
+
+#[tauri::command]
+pub fn get_version() -> String {
+    env!("CARGO_PKG_VERSION").to_string()
+}
+
+#[tauri::command]
 pub fn set_blur_radius(app: AppHandle, radius: u32) -> Result<(), String> {
     let window = app
         .get_webview_window("main")

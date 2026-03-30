@@ -2,7 +2,7 @@ import { listen } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWindow, LogicalSize } from "@tauri-apps/api/window";
 import { Session, Group, sessionState } from "./state";
-import { initMascotGrid, triggerExit } from "./mascot-grid";
+import { initMascotGrid, triggerExit, markSilentUpdate } from "./mascot-grid";
 import { initSound, updateSoundSettings } from "./sound";
 import { initTooltip } from "./tooltip";
 import { initPreferences } from "./preferences";
@@ -14,7 +14,7 @@ interface Config {
   showLabels: boolean;
   showTooltips: boolean;
   position: { x: number; y: number };
-  sound: { enabled: boolean; volume: number; pack: string; overrides: Record<string, string> };
+  sound: { enabled: boolean; volume: number; pack: string; overrides: Record<string, string>; muted: string[] };
   theme: {
     backgroundColor: string;
     backgroundOpacity: number;
@@ -52,7 +52,7 @@ function applyConfig(config: Config): void {
   }).catch(() => {});
 
   // Update sound settings
-  updateSoundSettings(config.sound.enabled, config.sound.volume, config.sound.pack, config.sound.overrides);
+  updateSoundSettings(config.sound.enabled, config.sound.volume, config.sound.pack, config.sound.overrides, config.sound.muted ?? []);
 }
 
 async function resizeWindow(): Promise<void> {
@@ -102,7 +102,10 @@ async function init(): Promise<void> {
     sessionState.add(event.payload);
   });
 
-  await listen<Session>("session-updated", (event) => {
+  await listen<Session & { noSound?: boolean }>("session-updated", (event) => {
+    if (event.payload.noSound) {
+      markSilentUpdate(event.payload.sessionId);
+    }
     sessionState.update(event.payload);
   });
 
@@ -149,13 +152,11 @@ async function init(): Promise<void> {
     }
   });
 
-  // Save window position on move
+  // Save window position on move (only position, not full config)
   await listen("tauri://move", async () => {
     const appWindow = getCurrentWindow();
     const pos = await appWindow.outerPosition();
-    const currentConfig = await invoke<Config>("get_config");
-    currentConfig.position = { x: pos.x, y: pos.y };
-    await invoke("save_config", { config: currentConfig });
+    await invoke("save_position", { x: pos.x, y: pos.y });
   });
 }
 

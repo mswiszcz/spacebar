@@ -15,15 +15,17 @@ let enabled = true;
 let volume = 0.5;
 let activePack = "default";
 let overrides: Record<string, string> = {};
+let muted: string[] = [];
 
 export async function initSound(): Promise<void> {
   const config = await invoke<{
-    sound?: { enabled?: boolean; volume?: number; pack?: string; overrides?: Record<string, string> };
+    sound?: { enabled?: boolean; volume?: number; pack?: string; overrides?: Record<string, string>; muted?: string[] };
   }>("get_config");
   enabled = config.sound?.enabled ?? true;
   volume = config.sound?.volume ?? 0.5;
   activePack = config.sound?.pack ?? "default";
   overrides = config.sound?.overrides ?? {};
+  muted = config.sound?.muted ?? [];
 }
 
 export function updateSoundSettings(
@@ -31,6 +33,7 @@ export function updateSoundSettings(
   soundVolume: number,
   pack: string,
   soundOverrides: Record<string, string>,
+  soundMuted: string[],
 ): void {
   const packChanged = pack !== activePack;
   const overridesChanged = JSON.stringify(soundOverrides) !== JSON.stringify(overrides);
@@ -39,6 +42,7 @@ export function updateSoundSettings(
   volume = soundVolume;
   activePack = pack;
   overrides = soundOverrides;
+  muted = soundMuted;
 
   if (packChanged || overridesChanged) {
     audioCache.clear();
@@ -54,8 +58,8 @@ export function resolveSoundUrl(state: string): string | null {
   return `/sounds/${activePack}/${file}`;
 }
 
-export function playStateSound(state: string): void {
-  if (!enabled) return;
+export function playStateSound(state: string, noSound?: boolean): void {
+  if (!enabled || noSound || muted.includes(state)) return;
 
   const url = resolveSoundUrl(state);
   if (!url) return;

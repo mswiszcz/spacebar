@@ -12,6 +12,7 @@ import { invoke } from "@tauri-apps/api/core";
 let tooltipWindow: WebviewWindow | null = null;
 let showTooltips = true;
 let generation = 0;
+let activeGeneration = -1;
 
 export async function initTooltip(): Promise<void> {
   tooltipWindow = await WebviewWindow.getByLabel("tooltip");
@@ -28,11 +29,11 @@ export async function initTooltip(): Promise<void> {
 
   listen<{ width: number; height: number }>("tooltip:ready", async (event) => {
     const currentGen = generation;
-    if (!tooltipWindow) return;
+    if (!tooltipWindow || activeGeneration !== currentGen) return;
 
     const { width, height } = event.payload;
     const monitor = await currentMonitor();
-    if (!monitor || currentGen !== generation) return;
+    if (!monitor || activeGeneration !== currentGen) return;
 
     const monitorPos = monitor.position;
     const monitorSize = monitor.size;
@@ -59,7 +60,7 @@ export async function initTooltip(): Promise<void> {
       y = monitorPos.y + monitorSize.height - height - 4;
     }
 
-    if (currentGen !== generation) return;
+    if (activeGeneration !== currentGen) return;
 
     await tooltipWindow.setSize(new PhysicalSize(width, height));
     await tooltipWindow.setPosition(new PhysicalPosition(x, y));
@@ -78,6 +79,7 @@ export async function showTooltip(
   if (!showTooltips || !tooltipWindow) return;
 
   generation++;
+  activeGeneration = generation;
 
   const mainPos = await getCurrentWindow().outerPosition();
   const rect = anchor.getBoundingClientRect();
@@ -101,6 +103,7 @@ export async function showTooltip(
 
 export async function hideTooltip(): Promise<void> {
   generation++;
+  activeGeneration = -1;
   if (!tooltipWindow) return;
   await emit("tooltip:hide");
   await tooltipWindow.hide();

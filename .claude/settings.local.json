@@ -29,7 +29,9 @@
       "Bash(afplay /Users/mswiszcz/Labs/agent-montior/public/sounds/retro/enter.wav)",
       "Bash(afplay /Users/mswiszcz/Labs/agent-montior/public/sounds/mechanical/enter.wav)",
       "WebFetch(domain:freesound.org)",
-      "mcp__plugin_context7_context7__resolve-library-id"
+      "mcp__plugin_context7_context7__resolve-library-id",
+      "Skill(update-config)",
+      "WebFetch(domain:docs.anthropic.com)"
     ]
   }
 }

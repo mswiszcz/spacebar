@@ -32,6 +32,8 @@ pub struct SoundConfig {
     pub pack: String,
     #[serde(default)]
     pub overrides: HashMap<String, String>,
+    #[serde(default)]
+    pub muted: Vec<String>,
 }
 
 fn default_pack() -> String {
@@ -61,6 +63,7 @@ impl Default for Config {
                 volume: 0.5,
                 pack: "default".into(),
                 overrides: HashMap::new(),
+                muted: vec![],
             },
             theme: ThemeConfig {
                 background_color: "#1a1a2e".into(),
@@ -109,6 +112,7 @@ mod tests {
         let parsed: SoundConfig = serde_json::from_str(json).unwrap();
         assert_eq!(parsed.pack, "default");
         assert!(parsed.overrides.is_empty());
+        assert!(parsed.muted.is_empty());
     }
 
     #[test]

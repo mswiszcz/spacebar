@@ -85,6 +85,8 @@ pub fn run() {
             commands::set_main_always_on_top,
             commands::set_blur_radius,
             commands::pick_sound_file,
+            commands::save_position,
+            commands::get_version,
         ])
         .setup(move |app| {
             // Hide from Dock — tray-only app
@@ -189,7 +191,9 @@ pub fn run() {
                 }
             }
             if let tauri::WindowEvent::Destroyed = event {
-                server::cleanup_port_file();
+                if window.label() == "main" {
+                    server::cleanup_port_file();
+                }
             }
         })
         .run(tauri::generate_context!())

@@ -32,6 +32,8 @@ enum Commands {
         session_id: String,
         #[arg(long)]
         state: String,
+        #[arg(long)]
+        no_sound: bool,
     },
     /// Remove an agent session
     Remove {
@@ -57,6 +59,7 @@ struct RegisterBody {
 struct UpdateBody {
     session_id: String,
     state: String,
+    no_sound: bool,
 }
 
 #[derive(Serialize)]
@@ -154,9 +157,9 @@ fn main() {
                 .send_json(&body)
                 .map(|_| ())
         }
-        Commands::Update { session_id, state } => {
+        Commands::Update { session_id, state, no_sound } => {
             let base_url = get_base_url_or_exit();
-            let body = UpdateBody { session_id, state };
+            let body = UpdateBody { session_id, state, no_sound };
             ureq::post(format!("{base_url}/update"))
                 .send_json(&body)
                 .map(|_| ())
