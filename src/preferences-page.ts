@@ -104,6 +104,25 @@ async function init(): Promise<void> {
     await invoke("set_main_always_on_top", { alwaysOnTop: v });
     save();
   });
+
+  bindCheckbox("#pref-snap-enabled", (v) => {
+    config.snap.enabled = v;
+    const paddingRow = document.getElementById("pref-snap-padding-row");
+    if (paddingRow) paddingRow.style.display = v ? "flex" : "none";
+    if (!v) config.snap.snappedEdge = null;
+    save();
+  });
+
+  const snapPaddingEl = document.querySelector<HTMLInputElement>("#pref-snap-padding");
+  if (snapPaddingEl) {
+    const snapPaddingVal = document.getElementById("pref-snap-padding-val");
+    snapPaddingEl.addEventListener("input", (e) => {
+      const v = Number((e.target as HTMLInputElement).value);
+      if (snapPaddingVal) snapPaddingVal.textContent = v + "px";
+      config.snap.edgePadding = v;
+      save();
+    });
+  }
 }
 
 // ── Page renderers ──────────────────────────────────
@@ -267,6 +286,25 @@ function renderBehaviorPage(config: Config): string {
             <span class="prefs-row-hint">Keep the monitor window above other windows</span>
           </div>
           ${toggleSwitch("pref-always-on-top", config.alwaysOnTop)}
+        </div>
+
+        <div class="prefs-row">
+          <div class="prefs-row-info">
+            <span class="prefs-row-label">Edge Snapping</span>
+            <span class="prefs-row-hint">Snap window to screen edges when dragged nearby</span>
+          </div>
+          ${toggleSwitch("pref-snap-enabled", config.snap.enabled)}
+        </div>
+
+        <div class="prefs-row" id="pref-snap-padding-row" style="display: ${config.snap.enabled ? "flex" : "none"}">
+          <div class="prefs-row-info">
+            <span class="prefs-row-label">Edge Padding</span>
+            <span class="prefs-row-hint">Gap between window and screen edge</span>
+          </div>
+          <div class="prefs-range-wrap">
+            <input type="range" class="prefs-range" id="pref-snap-padding" min="0" max="32" value="${config.snap.edgePadding}">
+            <span class="prefs-range-value" id="pref-snap-padding-val">${config.snap.edgePadding}px</span>
+          </div>
         </div>
       </div>
     </div>
