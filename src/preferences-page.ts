@@ -15,6 +15,7 @@ interface Config {
     blurRadius: number;
     accentColor: string;
   };
+  snap: { enabled: boolean; edgePadding: number; snappedEdge: string | null };
 }
 
 interface Tab {
