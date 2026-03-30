@@ -116,6 +116,7 @@ function applyConfig(config: Config): void {
 }
 
 let _snapConfig: { enabled: boolean; edgePadding: number; snappedEdge: string | null } | null = null;
+let _isSnapping = false;
 
 async function resizeWindow(): Promise<void> {
   const grid = document.querySelector(".mascot-grid") as HTMLElement;
@@ -157,7 +158,9 @@ async function resizeWindow(): Promise<void> {
         default:
           return;
       }
+      _isSnapping = true;
       await appWindow.setPosition(new PhysicalPosition(x, y));
+      _isSnapping = false;
       await invoke("save_position", { x, y });
     }
   });
@@ -254,6 +257,8 @@ async function init(): Promise<void> {
   // Save window position on move, with snap detection
   let snapDebounce: number | null = null;
   await listen("tauri://move", async () => {
+    if (_isSnapping) return;
+
     const appWindow = getCurrentWindow();
     const pos = await appWindow.outerPosition();
     await invoke("save_position", { x: pos.x, y: pos.y });
@@ -278,7 +283,9 @@ async function init(): Promise<void> {
       );
 
       if (snap) {
+        _isSnapping = true;
         await appWindow.setPosition(new PhysicalPosition(snap.x, snap.y));
+        _isSnapping = false;
         config.snap.snappedEdge = snap.edge;
         const newOrientation = (snap.edge === "left" || snap.edge === "right") ? "vertical" : "horizontal";
         if (config.orientation !== newOrientation) {
