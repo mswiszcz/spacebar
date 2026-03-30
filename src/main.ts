@@ -1,6 +1,6 @@
 import { listen } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/core";
-import { getCurrentWindow, LogicalSize } from "@tauri-apps/api/window";
+import { getCurrentWindow, LogicalSize, currentMonitor, PhysicalPosition } from "@tauri-apps/api/window";
 import { Session, Group, sessionState } from "./state";
 import { initMascotGrid, triggerExit, markSilentUpdate } from "./mascot-grid";
 import { initSound, updateSoundSettings } from "./sound";
@@ -22,6 +22,62 @@ interface Config {
     accentColor: string;
   };
   snap: { enabled: boolean; edgePadding: number; snappedEdge: string | null };
+}
+
+const SNAP_THRESHOLD = 50;
+
+function computeSnapPosition(
+  windowX: number,
+  windowY: number,
+  windowWidth: number,
+  windowHeight: number,
+  monitorX: number,
+  monitorY: number,
+  monitorWidth: number,
+  monitorHeight: number,
+  edgePadding: number,
+): { edge: string; x: number; y: number } | null {
+  const distTop = windowY - monitorY;
+  const distBottom = (monitorY + monitorHeight) - (windowY + windowHeight);
+  const distLeft = windowX - monitorX;
+  const distRight = (monitorX + monitorWidth) - (windowX + windowWidth);
+
+  const edges: { edge: string; dist: number }[] = [];
+  if (distTop < SNAP_THRESHOLD) edges.push({ edge: "top", dist: Math.abs(distTop) });
+  if (distBottom < SNAP_THRESHOLD) edges.push({ edge: "bottom", dist: Math.abs(distBottom) });
+  if (distLeft < SNAP_THRESHOLD) edges.push({ edge: "left", dist: Math.abs(distLeft) });
+  if (distRight < SNAP_THRESHOLD) edges.push({ edge: "right", dist: Math.abs(distRight) });
+
+  if (edges.length === 0) return null;
+
+  edges.sort((a, b) => a.dist - b.dist);
+  const closest = edges[0];
+
+  let x: number;
+  let y: number;
+
+  switch (closest.edge) {
+    case "top":
+      x = monitorX + Math.round((monitorWidth - windowWidth) / 2);
+      y = monitorY + edgePadding;
+      break;
+    case "bottom":
+      x = monitorX + Math.round((monitorWidth - windowWidth) / 2);
+      y = monitorY + monitorHeight - windowHeight - edgePadding;
+      break;
+    case "left":
+      x = monitorX + edgePadding;
+      y = monitorY + Math.round((monitorHeight - windowHeight) / 2);
+      break;
+    case "right":
+      x = monitorX + monitorWidth - windowWidth - edgePadding;
+      y = monitorY + Math.round((monitorHeight - windowHeight) / 2);
+      break;
+    default:
+      return null;
+  }
+
+  return { edge: closest.edge, x, y };
 }
 
 function applyConfig(config: Config): void {
@@ -81,8 +137,13 @@ async function init(): Promise<void> {
   initMascotGrid(app);
 
   // Load and apply initial config
-  const config = await invoke<Config>("get_config");
+  let config = await invoke<Config>("get_config");
   applyConfig(config);
+
+  await listen<Config>("config-changed", (event) => {
+    config = event.payload;
+    applyConfig(config);
+  });
 
   // Load existing groups and sessions (in case frontend reloads)
   const existingGroups = await invoke<Group[]>("get_groups");
@@ -154,11 +215,46 @@ async function init(): Promise<void> {
     }
   });
 
-  // Save window position on move (only position, not full config)
+  // Save window position on move, with snap detection
+  let snapDebounce: number | null = null;
   await listen("tauri://move", async () => {
     const appWindow = getCurrentWindow();
     const pos = await appWindow.outerPosition();
     await invoke("save_position", { x: pos.x, y: pos.y });
+
+    if (!config.snap.enabled) return;
+
+    if (snapDebounce !== null) clearTimeout(snapDebounce);
+    snapDebounce = window.setTimeout(async () => {
+      snapDebounce = null;
+      const monitor = await currentMonitor();
+      if (!monitor) return;
+
+      const size = await appWindow.outerSize();
+      const currentPos = await appWindow.outerPosition();
+
+      const snap = computeSnapPosition(
+        currentPos.x, currentPos.y,
+        size.width, size.height,
+        monitor.position.x, monitor.position.y,
+        monitor.size.width, monitor.size.height,
+        config.snap.edgePadding * monitor.scaleFactor,
+      );
+
+      if (snap) {
+        await appWindow.setPosition(new PhysicalPosition(snap.x, snap.y));
+        config.snap.snappedEdge = snap.edge;
+        const newOrientation = (snap.edge === "left" || snap.edge === "right") ? "vertical" : "horizontal";
+        if (config.orientation !== newOrientation) {
+          config.orientation = newOrientation;
+          applyConfig(config);
+        }
+      } else {
+        config.snap.snappedEdge = null;
+      }
+
+      await invoke("save_config", { config });
+    }, 150);
   });
 }
 
