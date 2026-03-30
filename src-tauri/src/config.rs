@@ -16,6 +16,8 @@ pub struct Config {
     pub theme: ThemeConfig,
     #[serde(default)]
     pub group_renames: HashMap<String, String>,
+    #[serde(default)]
+    pub snap: SnapConfig,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -49,6 +51,24 @@ pub struct ThemeConfig {
     pub accent_color: String,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SnapConfig {
+    pub enabled: bool,
+    pub edge_padding: u32,
+    pub snapped_edge: Option<String>,
+}
+
+impl Default for SnapConfig {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            edge_padding: 4,
+            snapped_edge: None,
+        }
+    }
+}
+
 impl Default for Config {
     fn default() -> Self {
         Self {
@@ -72,6 +92,7 @@ impl Default for Config {
                 accent_color: "#E8825A".into(),
             },
             group_renames: HashMap::new(),
+            snap: SnapConfig::default(),
         }
     }
 }
@@ -113,6 +134,30 @@ mod tests {
         assert_eq!(parsed.pack, "default");
         assert!(parsed.overrides.is_empty());
         assert!(parsed.muted.is_empty());
+    }
+
+    #[test]
+    fn test_snap_config_backward_compat() {
+        // Config without snap field should deserialize with defaults
+        let json = r##"{
+            "orientation": "horizontal",
+            "alwaysOnTop": true,
+            "mascotSize": "medium",
+            "showLabels": true,
+            "showTooltips": true,
+            "position": {"x": 100, "y": 100},
+            "sound": {"enabled": true, "volume": 0.5},
+            "theme": {
+                "backgroundColor": "#1a1a2e",
+                "backgroundOpacity": 0.8,
+                "blurRadius": 20,
+                "accentColor": "#E8825A"
+            }
+        }"##;
+        let parsed: Config = serde_json::from_str(json).unwrap();
+        assert!(!parsed.snap.enabled);
+        assert_eq!(parsed.snap.edge_padding, 4);
+        assert!(parsed.snap.snapped_edge.is_none());
     }
 
     #[test]
