@@ -83,6 +83,7 @@ html, body {
   cursor: pointer;
   transition: transform 0.15s ease;
   position: relative;
+  width: var(--mascot-size, 48px);
 }
 
 .mascot-item:hover {
@@ -111,11 +112,16 @@ html, body {
   text-align: center;
   margin-top: 2px;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Size variants */
+.size-small .mascot-item { --mascot-size: 32px; }
 .size-small .mascot-svg { --mascot-size: 32px; }
+.size-medium .mascot-item { --mascot-size: 48px; }
 .size-medium .mascot-svg { --mascot-size: 48px; }
+.size-large .mascot-item { --mascot-size: 64px; }
 .size-large .mascot-svg { --mascot-size: 64px; }
 
 /* Tooltip window body */

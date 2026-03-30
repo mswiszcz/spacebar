@@ -51,6 +51,9 @@ function applyConfig(config: Config): void {
     radius: config.theme.blurRadius,
   }).catch(() => {});
 
+  // Resize window to fit new layout (orientation, size, labels may change dimensions)
+  resizeWindow();
+
   // Update sound settings
   updateSoundSettings(config.sound.enabled, config.sound.volume, config.sound.pack, config.sound.overrides, config.sound.muted ?? []);
 }

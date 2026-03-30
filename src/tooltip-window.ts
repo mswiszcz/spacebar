@@ -1,19 +1,17 @@
 import { listen, emit } from "@tauri-apps/api/event";
 
 interface TooltipShowPayload {
+  generation: number;
   sessionId: string;
   agent: string;
   state: string;
   registeredAt: number;
-  anchorScreenX: number;
-  anchorScreenY: number;
-  anchorHeight: number;
 }
 
 const tooltipRoot = document.getElementById("tooltip-root")!;
 
 listen<TooltipShowPayload>("tooltip:show", (event) => {
-  const { sessionId, agent, state, registeredAt } = event.payload;
+  const { generation, sessionId, agent, state, registeredAt } = event.payload;
 
   const uptime = Math.floor((Date.now() / 1000 - registeredAt) / 60);
   const uptimeText = uptime < 1 ? "<1m" : `${uptime}m`;
@@ -31,6 +29,7 @@ listen<TooltipShowPayload>("tooltip:show", (event) => {
 
   const rect = tooltipRoot.getBoundingClientRect();
   emit("tooltip:ready", {
+    generation,
     width: Math.ceil(rect.width),
     height: Math.ceil(rect.height),
   });

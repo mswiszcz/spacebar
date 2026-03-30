@@ -13,6 +13,9 @@ let tooltipWindow: WebviewWindow | null = null;
 let showTooltips = true;
 let generation = 0;
 let activeGeneration = -1;
+let showTimer: number | null = null;
+
+const SHOW_DELAY_MS = 200;
 
 export async function initTooltip(): Promise<void> {
   tooltipWindow = await WebviewWindow.getByLabel("tooltip");
@@ -27,63 +30,91 @@ export async function initTooltip(): Promise<void> {
     }
   });
 
-  listen<{ width: number; height: number }>("tooltip:ready", async (event) => {
-    const currentGen = generation;
-    if (!tooltipWindow || activeGeneration !== currentGen) return;
+  listen<{ width: number; height: number; generation: number }>(
+    "tooltip:ready",
+    async (event) => {
+      const { width, height, generation: readyGen } = event.payload;
 
-    const { width, height } = event.payload;
-    const monitor = await currentMonitor();
-    if (!monitor || activeGeneration !== currentGen) return;
+      // Only proceed if this ready event matches the currently active show
+      if (!tooltipWindow || activeGeneration !== readyGen) return;
 
-    const monitorPos = monitor.position;
-    const monitorSize = monitor.size;
+      const monitor = await currentMonitor();
+      if (!monitor || activeGeneration !== readyGen) return;
 
-    // Retrieve stored anchor from the module-level variable
-    let x = lastAnchorScreenX - width / 2;
-    let y = lastAnchorScreenY - height - 8;
+      const monitorPos = monitor.position;
+      const monitorSize = monitor.size;
 
-    // Flip below if not enough space above
-    if (y < monitorPos.y) {
-      y = lastAnchorScreenY + lastAnchorHeight + 8;
-    }
+      let x = lastAnchorScreenX - width / 2;
+      let y = lastAnchorScreenY - height - 8;
 
-    // Clamp horizontally
-    if (x < monitorPos.x + 4) {
-      x = monitorPos.x + 4;
-    }
-    if (x + width > monitorPos.x + monitorSize.width - 4) {
-      x = monitorPos.x + monitorSize.width - width - 4;
-    }
+      // Flip below if not enough space above
+      if (y < monitorPos.y) {
+        y = lastAnchorScreenY + lastAnchorHeight + 8;
+      }
 
-    // Clamp bottom
-    if (y + height > monitorPos.y + monitorSize.height - 4) {
-      y = monitorPos.y + monitorSize.height - height - 4;
-    }
+      // Clamp horizontally
+      if (x < monitorPos.x + 4) {
+        x = monitorPos.x + 4;
+      }
+      if (x + width > monitorPos.x + monitorSize.width - 4) {
+        x = monitorPos.x + monitorSize.width - width - 4;
+      }
 
-    if (activeGeneration !== currentGen) return;
+      // Clamp bottom
+      if (y + height > monitorPos.y + monitorSize.height - 4) {
+        y = monitorPos.y + monitorSize.height - height - 4;
+      }
 
-    await tooltipWindow.setSize(new PhysicalSize(width, height));
-    await tooltipWindow.setPosition(new PhysicalPosition(x, y));
-    await tooltipWindow.show();
-  });
+      if (activeGeneration !== readyGen) return;
+
+      await tooltipWindow.setSize(new PhysicalSize(width, height));
+      await tooltipWindow.setPosition(new PhysicalPosition(x, y));
+      await tooltipWindow.show();
+    },
+  );
 }
 
 let lastAnchorScreenX = 0;
 let lastAnchorScreenY = 0;
 let lastAnchorHeight = 0;
 
-export async function showTooltip(
-  session: Session,
-  anchor: HTMLElement,
-): Promise<void> {
+export function showTooltip(session: Session, anchor: HTMLElement): void {
   if (!showTooltips || !tooltipWindow) return;
 
+  // Cancel any pending show
+  if (showTimer !== null) {
+    clearTimeout(showTimer);
+    showTimer = null;
+  }
+
+  // Bump generation immediately so any in-flight ready events are stale
   generation++;
-  activeGeneration = generation;
+  const thisGen = generation;
+
+  showTimer = window.setTimeout(() => {
+    showTimer = null;
+    // If a hide happened while we were waiting, abort
+    if (activeGeneration === -1 && generation !== thisGen) return;
+
+    activeGeneration = thisGen;
+    doShowTooltip(session, anchor, thisGen);
+  }, SHOW_DELAY_MS);
+}
+
+async function doShowTooltip(
+  session: Session,
+  anchor: HTMLElement,
+  gen: number,
+): Promise<void> {
+  if (!tooltipWindow || activeGeneration !== gen) return;
 
   const mainPos = await getCurrentWindow().outerPosition();
+  if (activeGeneration !== gen) return;
+
   const rect = anchor.getBoundingClientRect();
   const monitor = await currentMonitor();
+  if (activeGeneration !== gen) return;
+
   const scaleFactor = monitor?.scaleFactor ?? 1;
 
   lastAnchorScreenX = mainPos.x + (rect.left + rect.width / 2) * scaleFactor;
@@ -91,20 +122,27 @@ export async function showTooltip(
   lastAnchorHeight = rect.height * scaleFactor;
 
   await emit("tooltip:show", {
+    generation: gen,
     sessionId: session.sessionId,
     agent: session.agent,
     state: session.state,
     registeredAt: session.registeredAt,
-    anchorScreenX: lastAnchorScreenX,
-    anchorScreenY: lastAnchorScreenY,
-    anchorHeight: lastAnchorHeight,
   });
 }
 
-export async function hideTooltip(): Promise<void> {
+export function hideTooltip(): void {
+  // Cancel any pending debounced show
+  if (showTimer !== null) {
+    clearTimeout(showTimer);
+    showTimer = null;
+  }
+
   generation++;
   activeGeneration = -1;
+
   if (!tooltipWindow) return;
-  await emit("tooltip:hide");
-  await tooltipWindow.hide();
+
+  // Fire-and-forget: hide immediately, no awaiting
+  emit("tooltip:hide");
+  tooltipWindow.hide();
 }
