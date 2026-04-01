@@ -11,9 +11,14 @@ pub fn execute_click(session_id: String, store: State<'_, Arc<SessionStore>>) ->
         .get(&session_id)
         .ok_or_else(|| format!("Session {session_id} not found"))?;
 
+    let on_click = session
+        .on_click
+        .as_deref()
+        .ok_or_else(|| format!("Session {session_id} has no on_click command"))?;
+
     Command::new("sh")
         .arg("-c")
-        .arg(&session.on_click)
+        .arg(on_click)
         .spawn()
         .map_err(|e| format!("Failed to execute click command: {e}"))?;
 

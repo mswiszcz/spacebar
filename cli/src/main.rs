@@ -22,7 +22,7 @@ enum Commands {
         #[arg(long)]
         session_id: String,
         #[arg(long)]
-        on_click: String,
+        on_click: Option<String>,
         #[arg(long)]
         group: Option<String>,
     },
@@ -49,7 +49,7 @@ enum Commands {
 struct RegisterBody {
     agent: String,
     session_id: String,
-    on_click: String,
+    on_click: Option<String>,
     pwd: Option<String>,
     display_name: Option<String>,
 }

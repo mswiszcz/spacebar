@@ -151,10 +151,12 @@ pub fn run() {
                     id if id.starts_with("group-") => {}
                     id => {
                         if let Some(session) = store_for_tray.get(id) {
-                            let _ = Command::new("sh")
-                                .arg("-c")
-                                .arg(&session.on_click)
-                                .spawn();
+                            if let Some(ref on_click) = session.on_click {
+                                let _ = Command::new("sh")
+                                    .arg("-c")
+                                    .arg(on_click)
+                                    .spawn();
+                            }
                         }
                     }
                 })

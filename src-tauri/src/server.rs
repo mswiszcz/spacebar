@@ -21,7 +21,7 @@ struct AppState {
 pub struct RegisterRequest {
     pub agent: String,
     pub session_id: String,
-    pub on_click: String,
+    pub on_click: Option<String>,
     pub pwd: Option<String>,
     pub display_name: Option<String>,
 }

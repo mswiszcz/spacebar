@@ -10,7 +10,7 @@ pub struct Session {
     pub session_id: String,
     pub agent: String,
     pub state: String,
-    pub on_click: String,
+    pub on_click: Option<String>,
     pub registered_at: u64,
     pub pwd: Option<String>,
     pub group_id: String,
@@ -49,7 +49,7 @@ impl SessionStore {
         &self,
         agent: String,
         session_id: String,
-        on_click: String,
+        on_click: Option<String>,
         pwd: Option<String>,
         display_name: Option<String>,
         group_renames: &HashMap<String, String>,
@@ -190,7 +190,7 @@ mod tests {
         let (session, _group, _is_new) = store.register(
             "claude-code".into(),
             "sess-1".into(),
-            "wsh view focus".into(),
+            Some("wsh view focus".into()),
             None,
             None,
             &empty_renames(),
@@ -198,14 +198,14 @@ mod tests {
         assert_eq!(session.session_id, "sess-1");
         assert_eq!(session.agent, "claude-code");
         assert_eq!(session.state, "idle");
-        assert_eq!(session.on_click, "wsh view focus");
+        assert_eq!(session.on_click, Some("wsh view focus".into()));
         assert!(session.registered_at > 0);
     }
 
     #[test]
     fn test_update_changes_state() {
         let store = SessionStore::new();
-        store.register("claude-code".into(), "sess-1".into(), "cmd".into(), None, None, &empty_renames());
+        store.register("claude-code".into(), "sess-1".into(), Some("cmd".into()), None, None, &empty_renames());
         let updated = store.update("sess-1", "thinking".into());
         assert_eq!(updated.unwrap().state, "thinking");
     }
@@ -219,7 +219,7 @@ mod tests {
     #[test]
     fn test_remove_returns_session_and_deletes() {
         let store = SessionStore::new();
-        store.register("claude-code".into(), "sess-1".into(), "cmd".into(), None, None, &empty_renames());
+        store.register("claude-code".into(), "sess-1".into(), Some("cmd".into()), None, None, &empty_renames());
         let removed = store.remove("sess-1");
         assert!(removed.is_some());
         assert!(store.get("sess-1").is_none());
@@ -228,8 +228,8 @@ mod tests {
     #[test]
     fn test_all_returns_all_sessions() {
         let store = SessionStore::new();
-        store.register("claude-code".into(), "s1".into(), "cmd".into(), None, None, &empty_renames());
-        store.register("claude-code".into(), "s2".into(), "cmd".into(), None, None, &empty_renames());
+        store.register("claude-code".into(), "s1".into(), Some("cmd".into()), None, None, &empty_renames());
+        store.register("claude-code".into(), "s2".into(), Some("cmd".into()), None, None, &empty_renames());
         assert_eq!(store.all().len(), 2);
     }
 
@@ -239,7 +239,7 @@ mod tests {
         let (session, group, is_new) = store.register(
             "claude-code".into(),
             "sess-1".into(),
-            "cmd".into(),
+            Some("cmd".into()),
             Some("/Users/test/project".into()),
             None,
             &empty_renames(),
@@ -255,11 +255,11 @@ mod tests {
     fn test_register_same_pwd_reuses_group() {
         let store = SessionStore::new();
         let (_s1, g1, is_new1) = store.register(
-            "claude-code".into(), "s1".into(), "cmd".into(),
+            "claude-code".into(), "s1".into(), Some("cmd".into()),
             Some("/Users/test/project".into()), None, &empty_renames(),
         );
         let (_s2, g2, is_new2) = store.register(
-            "claude-code".into(), "s2".into(), "cmd".into(),
+            "claude-code".into(), "s2".into(), Some("cmd".into()),
             Some("/Users/test/project".into()), None, &empty_renames(),
         );
         assert!(is_new1);
@@ -272,7 +272,7 @@ mod tests {
     fn test_register_no_pwd_uses_anonymous() {
         let store = SessionStore::new();
         let (session, group, _) = store.register(
-            "claude-code".into(), "s1".into(), "cmd".into(),
+            "claude-code".into(), "s1".into(), Some("cmd".into()),
             None, None, &empty_renames(),
         );
         assert_eq!(session.group_id, "anonymous");
@@ -284,7 +284,7 @@ mod tests {
     fn test_remove_last_session_removes_group() {
         let store = SessionStore::new();
         store.register(
-            "claude-code".into(), "s1".into(), "cmd".into(),
+            "claude-code".into(), "s1".into(), Some("cmd".into()),
             Some("/Users/test/project".into()), None, &empty_renames(),
         );
         let (_, _, group_empty) = store.remove("s1").unwrap();
@@ -296,11 +296,11 @@ mod tests {
     fn test_remove_non_last_keeps_group() {
         let store = SessionStore::new();
         store.register(
-            "claude-code".into(), "s1".into(), "cmd".into(),
+            "claude-code".into(), "s1".into(), Some("cmd".into()),
             Some("/Users/test/project".into()), None, &empty_renames(),
         );
         store.register(
-            "claude-code".into(), "s2".into(), "cmd".into(),
+            "claude-code".into(), "s2".into(), Some("cmd".into()),
             Some("/Users/test/project".into()), None, &empty_renames(),
         );
         let (_, group, group_empty) = store.remove("s1").unwrap();
@@ -312,7 +312,7 @@ mod tests {
     fn test_rename_group() {
         let store = SessionStore::new();
         let (_, group, _) = store.register(
-            "claude-code".into(), "s1".into(), "cmd".into(),
+            "claude-code".into(), "s1".into(), Some("cmd".into()),
             Some("/Users/test/project".into()), None, &empty_renames(),
         );
         let renamed = store.rename_group(&group.group_id, "My Project".into());
@@ -325,7 +325,7 @@ mod tests {
         let mut renames = HashMap::new();
         renames.insert("/Users/test/project".to_string(), "Custom Name".to_string());
         let (_, group, _) = store.register(
-            "claude-code".into(), "s1".into(), "cmd".into(),
+            "claude-code".into(), "s1".into(), Some("cmd".into()),
             Some("/Users/test/project".into()), Some("Override".into()), &renames,
         );
         assert_eq!(group.display_name, Some("Custom Name".into()));

@@ -2,7 +2,7 @@ export interface Session {
   sessionId: string;
   agent: string;
   state: string;
-  onClick: string;
+  onClick: string | null;
   registeredAt: number;
   pwd: string | null;
   groupId: string;
