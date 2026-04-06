@@ -2,7 +2,7 @@ import { listen } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWindow, LogicalSize, currentMonitor, PhysicalPosition } from "@tauri-apps/api/window";
 import { Session, Group, sessionState } from "./state";
-import { initMascotGrid, triggerExit, markSilentUpdate } from "./mascot-grid";
+import { initMascotGrid, triggerExit, markSilentUpdate, updateDisplayConfig } from "./mascot-grid";
 import { initSound, updateSoundSettings } from "./sound";
 import { initTooltip } from "./tooltip";
 import { initPreferences } from "./preferences";
@@ -20,9 +20,13 @@ interface Config {
     backgroundOpacity: number;
     blurRadius: number;
     accentColor: string;
+    entityGap: number;
+    groupGap: number;
   };
   snap: { enabled: boolean; edgePadding: number; snappedEdge: string | null };
   splitView: { overflowBehavior: string };
+  displayModes: Record<string, string>;
+  statusDotCorner: string;
 }
 
 const SNAP_THRESHOLD = 50;
@@ -95,20 +99,23 @@ function applyConfig(config: Config): void {
   root.style.setProperty("--bg-color", config.theme.backgroundColor);
   root.style.setProperty("--bg-opacity", String(config.theme.backgroundOpacity));
   root.style.setProperty("--accent-color", config.theme.accentColor);
+  root.style.setProperty("--entity-gap", (config.theme.entityGap ?? 8) + "px");
+  root.style.setProperty("--group-gap", (config.theme.groupGap ?? 12) + "px");
 
   // Apply size class (preserve other classes like split-view)
   app.classList.remove("size-small", "size-medium", "size-large");
   app.classList.add(`size-${config.mascotSize}`);
 
   // Apply label visibility
-  document.querySelectorAll(".mascot-label").forEach((el) => {
-    (el as HTMLElement).style.display = config.showLabels ? "block" : "none";
-  });
+  app.classList.toggle("hide-labels", !config.showLabels);
 
   // Re-apply native blur radius
   invoke("set_blur_radius", {
     radius: config.theme.blurRadius,
   }).catch(() => {});
+
+  // Apply display mode config
+  updateDisplayConfig(config.displayModes ?? {}, config.statusDotCorner ?? "top-left");
 
   // Resize window to fit new layout (orientation, size, labels may change dimensions)
   resizeWindow();
@@ -200,6 +207,12 @@ async function init(): Promise<void> {
   initPreferences(applyConfig);
   initMascotGrid(app);
 
+  // Create empty state (shown in split view when no agents)
+  const emptyState = document.createElement("div");
+  emptyState.className = "empty-state";
+  emptyState.innerHTML = `<img src="/icons/128x128.png" class="empty-state-icon" alt="Spacebar" />`;
+  app.appendChild(emptyState);
+
   // Create split-view green button
   const splitBtn = document.createElement("button");
   splitBtn.className = "split-view-btn";
@@ -214,6 +227,9 @@ async function init(): Promise<void> {
   let _isSplitView = false;
   let _preSplitOrientation: string | null = null;
 
+  // Snap orientation override state
+  let _preSnapOrientation: string | null = null;
+
   // Load and apply initial config
   let config = await invoke<Config>("get_config");
   _snapConfig = config.snap;
@@ -222,6 +238,10 @@ async function init(): Promise<void> {
   await listen<Config>("config-changed", (event) => {
     config = event.payload;
     _snapConfig = event.payload.snap;
+    // Fullscreen/split view must always stay vertical
+    if (_isSplitView) {
+      config.orientation = "vertical";
+    }
     applyConfig(config);
   });
 
@@ -242,7 +262,12 @@ async function init(): Promise<void> {
 
   // Listen for backend events
   await listen<Session>("session-added", (event) => {
+    emptyState.classList.remove("visible");
     sessionState.add(event.payload);
+  });
+
+  await listen("sessions-empty", () => {
+    emptyState.classList.add("visible");
   });
 
   await listen<Session & { noSound?: boolean }>("session-updated", (event) => {
@@ -273,6 +298,17 @@ async function init(): Promise<void> {
     sessionState.removeGroup(event.payload.groupId);
   });
 
+  // Auto-show/hide the green split-view button on mouse movement
+  let splitBtnTimeout: number | null = null;
+  document.addEventListener("mousemove", () => {
+    if (_isSplitView) return; // Hide in Split View (exit via macOS gestures)
+    splitBtn.classList.add("split-view-btn-visible");
+    if (splitBtnTimeout !== null) clearTimeout(splitBtnTimeout);
+    splitBtnTimeout = window.setTimeout(() => {
+      splitBtn.classList.remove("split-view-btn-visible");
+    }, 1500);
+  });
+
   // Enable dragging from anywhere on the window
   // Alt/Option + click on mascots also drags
   document.addEventListener("mousedown", (e) => {
@@ -295,7 +331,7 @@ async function init(): Promise<void> {
     }
   });
 
-  // Save window position on move, with snap detection
+  // Save window position on move, with snap detection and fullscreen space detection
   let snapDebounce: number | null = null;
   await listen("tauri://move", async () => {
     if (_isSnapping) return;
@@ -304,11 +340,21 @@ async function init(): Promise<void> {
     const pos = await appWindow.outerPosition();
     await invoke("save_position", { x: pos.x, y: pos.y });
 
-    if (!config.snap.enabled) return;
-
     if (snapDebounce !== null) clearTimeout(snapDebounce);
     snapDebounce = window.setTimeout(async () => {
       snapDebounce = null;
+
+      // Auto-enter Split View when dragged to a fullscreen space
+      if (!_isSplitView) {
+        const onFullscreenSpace = await invoke<boolean>("is_on_fullscreen_space");
+        if (onFullscreenSpace) {
+          await invoke("toggle_split_view");
+          return;
+        }
+      }
+
+      if (!config.snap.enabled) return;
+
       const monitor = await currentMonitor();
       if (!monitor) return;
 
@@ -330,11 +376,19 @@ async function init(): Promise<void> {
         config.snap.snappedEdge = snap.edge;
         const newOrientation = (snap.edge === "left" || snap.edge === "right") ? "vertical" : "horizontal";
         if (config.orientation !== newOrientation) {
+          if (_preSnapOrientation === null) {
+            _preSnapOrientation = config.orientation;
+          }
           config.orientation = newOrientation;
           applyConfig(config);
         }
       } else {
         config.snap.snappedEdge = null;
+        if (_preSnapOrientation !== null) {
+          config.orientation = _preSnapOrientation;
+          _preSnapOrientation = null;
+          applyConfig(config);
+        }
       }
 
       await invoke("save_config", { config });
@@ -365,6 +419,7 @@ async function init(): Promise<void> {
         }
 
         splitBtn.title = "Exit Split View";
+        splitBtn.classList.remove("split-view-btn-visible");
         applyConfig(config);
       } else {
         // Exiting Split View — restore window state after animation completes
