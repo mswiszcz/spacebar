@@ -16,6 +16,7 @@ interface Config {
     accentColor: string;
   };
   snap: { enabled: boolean; edgePadding: number; snappedEdge: string | null };
+  splitView: { overflowBehavior: string };
 }
 
 interface Tab {
@@ -88,6 +89,11 @@ async function init(): Promise<void> {
   bindSelect("#pref-mascot-size", (v) => { config.mascotSize = v; save(); });
   bindCheckbox("#pref-show-labels", (v) => { config.showLabels = v; save(); });
   bindCheckbox("#pref-show-tooltips", (v) => { config.showTooltips = v; save(); });
+  bindSelect("#pref-split-overflow", (v) => {
+    if (!config.splitView) config.splitView = { overflowBehavior: "scroll" };
+    config.splitView.overflowBehavior = v;
+    save();
+  });
 
   bindColor("#pref-bg-color", (v) => { config.theme.backgroundColor = v; save(); });
   bindRange("#pref-bg-opacity", (v) => { config.theme.backgroundOpacity = v / 100; save(); });
@@ -170,6 +176,17 @@ function renderLayoutPage(config: Config): string {
             <span class="prefs-row-hint">Show status tooltip on hover</span>
           </div>
           ${toggleSwitch("pref-show-tooltips", config.showTooltips)}
+        </div>
+
+        <div class="prefs-row">
+          <div class="prefs-row-info">
+            <span class="prefs-row-label">Split View Overflow</span>
+            <span class="prefs-row-hint">How to handle too many mascots in Split View</span>
+          </div>
+          <select class="prefs-select" id="pref-split-overflow">
+            <option value="scroll" ${(config.splitView?.overflowBehavior ?? "scroll") === "scroll" ? "selected" : ""}>Scroll</option>
+            <option value="shrink" ${config.splitView?.overflowBehavior === "shrink" ? "selected" : ""}>Auto-shrink</option>
+          </select>
         </div>
       </div>
     </div>
