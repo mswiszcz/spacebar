@@ -9,6 +9,10 @@ export type MascotState =
   | "exiting"
   | "sleeping";
 
+export interface IconDefinition {
+  svg: string;
+}
+
 export interface MascotDefinition {
   svg(state: MascotState): string;
   css: string;
@@ -17,4 +21,5 @@ export interface MascotDefinition {
     defaultColor: string;
     size: { width: number; height: number };
   };
+  icon?: IconDefinition;
 }
