@@ -1,5 +1,5 @@
 import { Session, Group, sessionState } from "./state";
-import { getMascot, getAllMascotCSS } from "./mascots/registry";
+import { getMascot, getAllMascotCSS, getMascotIcon } from "./mascots/registry";
 import { MascotState } from "./mascots/types";
 import { invoke } from "@tauri-apps/api/core";
 import { playStateSound } from "./sound";
@@ -9,6 +9,13 @@ const SLEEP_DELAY_MS = 30_000;
 const sleepTimers = new Map<string, number>();
 const silentUpdates = new Set<string>();
 const lastKnownState = new Map<string, string>();
+let displayModes: Record<string, string> = {};
+let statusDotCorner = "top-left";
+
+export function updateDisplayConfig(modes: Record<string, string>, corner: string): void {
+  displayModes = modes;
+  statusDotCorner = corner;
+}
 
 export function markSilentUpdate(sessionId: string): void {
   silentUpdates.add(sessionId);
@@ -41,9 +48,20 @@ function renderGroups(grid: HTMLElement): void {
 
   // Add or update groups
   for (const group of groups) {
+    // Skip groups with no live sessions (defensive: backend may have
+    // already removed the group but the frontend state is stale)
+    const groupSessions = group.sessionIds
+      .map((sid) => sessionState.get(sid))
+      .filter(Boolean) as Session[];
+
     let groupEl = grid.querySelector(
       `[data-group-id="${group.groupId}"]`
     ) as HTMLElement | null;
+
+    if (groupSessions.length === 0) {
+      if (groupEl) groupEl.remove();
+      continue;
+    }
 
     if (!groupEl) {
       groupEl = createGroupElement(group);
@@ -55,9 +73,6 @@ function renderGroups(grid: HTMLElement): void {
     const mascotContainer = groupEl.querySelector(
       ".group-mascots"
     ) as HTMLElement;
-    const groupSessions = group.sessionIds
-      .map((sid) => sessionState.get(sid))
-      .filter(Boolean) as Session[];
     renderSessionsInGroup(mascotContainer, groupSessions);
   }
 }
@@ -158,24 +173,45 @@ function renderSessionsInGroup(
       updateMascotElement(el, session);
     }
   });
+
+  // Rebuild separators
+  container.querySelectorAll(".entity-separator").forEach((s) => s.remove());
+  const items = Array.from(container.querySelectorAll(".mascot-item"));
+  for (let i = 1; i < items.length; i++) {
+    const sep = document.createElement("div");
+    sep.className = "entity-separator";
+    container.insertBefore(sep, items[i]);
+  }
 }
 
 function createMascotElement(session: Session): HTMLElement {
   const wrapper = document.createElement("div");
-  wrapper.className = `mascot-item state-idle`;
+  const isIcon = displayModes[session.agent] === "icon";
+  wrapper.className = `mascot-item state-idle${isIcon ? " icon-mode" : ""}`;
   wrapper.dataset.sessionId = session.sessionId;
 
-  const mascotWrapper = document.createElement("div");
-  mascotWrapper.className = "mascot-wrapper";
+  if (isIcon) {
+    const iconDef = getMascotIcon(session.agent);
+    const iconWrapper = document.createElement("div");
+    iconWrapper.className = "icon-wrapper";
+    iconWrapper.innerHTML = iconDef.svg;
 
-  const mascot = getMascot(session.agent);
-  mascotWrapper.innerHTML = mascot.svg("idle" as MascotState);
+    const dot = document.createElement("div");
+    dot.className = `status-dot dot-${statusDotCorner}`;
+
+    wrapper.appendChild(iconWrapper);
+    wrapper.appendChild(dot);
+  } else {
+    const mascotWrapper = document.createElement("div");
+    mascotWrapper.className = "mascot-wrapper";
+    const mascot = getMascot(session.agent);
+    mascotWrapper.innerHTML = mascot.svg("idle" as MascotState);
+    wrapper.appendChild(mascotWrapper);
+  }
 
   const label = document.createElement("div");
   label.className = "mascot-label";
   label.textContent = session.state;
-
-  wrapper.appendChild(mascotWrapper);
   wrapper.appendChild(label);
 
   lastKnownState.set(session.sessionId, session.state);
@@ -221,20 +257,32 @@ function updateMascotElement(el: HTMLElement, session: Session): void {
   const state = session.state as MascotState;
   const prev = lastKnownState.get(session.sessionId);
   if (prev === state) return;
+  if (prev === "sleeping" && state === "idle") return;
   lastKnownState.set(session.sessionId, state);
-
-  const mascot = getMascot(session.agent);
 
   const silent = silentUpdates.has(session.sessionId);
   silentUpdates.delete(session.sessionId);
   playStateSound(state, silent);
 
-  el.className = `mascot-item state-${state}`;
+  const isIcon = el.classList.contains("icon-mode");
+  el.className = `mascot-item state-${state}${isIcon ? " icon-mode" : ""}`;
   el.dataset.sessionId = session.sessionId;
 
-  const wrapper = el.querySelector(".mascot-wrapper");
-  if (wrapper) {
-    wrapper.innerHTML = mascot.svg(state);
+  if (isIcon) {
+    const dot = el.querySelector(".status-dot") as HTMLElement;
+    if (dot) {
+      dot.className = `status-dot dot-${statusDotCorner}`;
+      const dotStates = ["thinking", "needs-input", "error", "compacting", "notification"];
+      if (dotStates.includes(state)) {
+        dot.classList.add(`dot-${state}`);
+      }
+    }
+  } else {
+    const mascot = getMascot(session.agent);
+    const wrapper = el.querySelector(".mascot-wrapper");
+    if (wrapper) {
+      wrapper.innerHTML = mascot.svg(state);
+    }
   }
 
   const label = el.querySelector(".mascot-label");
@@ -259,11 +307,14 @@ export function triggerExit(
 
     if (el) {
       playStateSound("exiting");
-      el.className = "mascot-item state-exiting";
-      const mascot = getMascot("claude-code");
-      const wrapper = el.querySelector(".mascot-wrapper");
-      if (wrapper) {
-        wrapper.innerHTML = mascot.svg("exiting");
+      const isIcon = el.classList.contains("icon-mode");
+      el.className = `mascot-item state-exiting${isIcon ? " icon-mode" : ""}`;
+      if (!isIcon) {
+        const mascot = getMascot("claude-code");
+        const wrapper = el.querySelector(".mascot-wrapper");
+        if (wrapper) {
+          wrapper.innerHTML = mascot.svg("exiting");
+        }
       }
       setTimeout(() => {
         el.remove();
