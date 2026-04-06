@@ -18,6 +18,8 @@ pub struct Config {
     pub group_renames: HashMap<String, String>,
     #[serde(default)]
     pub snap: SnapConfig,
+    #[serde(default)]
+    pub split_view: SplitViewConfig,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -69,6 +71,20 @@ impl Default for SnapConfig {
     }
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SplitViewConfig {
+    pub overflow_behavior: String,
+}
+
+impl Default for SplitViewConfig {
+    fn default() -> Self {
+        Self {
+            overflow_behavior: "scroll".into(),
+        }
+    }
+}
+
 impl Default for Config {
     fn default() -> Self {
         Self {
@@ -93,6 +109,7 @@ impl Default for Config {
             },
             group_renames: HashMap::new(),
             snap: SnapConfig::default(),
+            split_view: SplitViewConfig::default(),
         }
     }
 }
@@ -158,6 +175,28 @@ mod tests {
         assert!(!parsed.snap.enabled);
         assert_eq!(parsed.snap.edge_padding, 4);
         assert!(parsed.snap.snapped_edge.is_none());
+    }
+
+    #[test]
+    fn test_split_view_config_backward_compat() {
+        // Config without split_view field should deserialize with defaults
+        let json = r##"{
+            "orientation": "horizontal",
+            "alwaysOnTop": true,
+            "mascotSize": "medium",
+            "showLabels": true,
+            "showTooltips": true,
+            "position": {"x": 100, "y": 100},
+            "sound": {"enabled": true, "volume": 0.5},
+            "theme": {
+                "backgroundColor": "#1a1a2e",
+                "backgroundOpacity": 0.8,
+                "blurRadius": 20,
+                "accentColor": "#E8825A"
+            }
+        }"##;
+        let parsed: Config = serde_json::from_str(json).unwrap();
+        assert_eq!(parsed.split_view.overflow_behavior, "scroll");
     }
 
     #[test]
