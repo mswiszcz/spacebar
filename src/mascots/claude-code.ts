@@ -229,4 +229,10 @@ export const claudeCode: MascotDefinition = {
     defaultColor: COLOR,
     size: { width: 66, height: 52 },
   },
+
+  icon: {
+    svg: `<svg viewBox="0 0 24 24" fill="currentColor">
+    <path d="M13.827 3.52l5.51 16.96H14.98l-1.166-3.744h-3.665L11.2 20.48H6.663L12.174 3.52h1.653zm-.844 5.38l-1.22 5.118h2.853L13.49 8.9h-.507z"/>
+  </svg>`,
+  },
 };
