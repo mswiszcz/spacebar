@@ -22,6 +22,7 @@ interface Config {
     accentColor: string;
   };
   snap: { enabled: boolean; edgePadding: number; snappedEdge: string | null };
+  splitView: { overflowBehavior: string };
 }
 
 const SNAP_THRESHOLD = 50;
@@ -124,6 +125,30 @@ async function resizeWindow(): Promise<void> {
 
   const appWindow = getCurrentWindow();
   requestAnimationFrame(async () => {
+    // In split view, macOS controls the window size — don't resize it ourselves.
+    // But do handle shrink overflow mode if configured.
+    if (document.getElementById("app")?.classList.contains("split-view")) {
+      const cfg = await invoke<Config>("get_config");
+      if (cfg.splitView?.overflowBehavior === "shrink") {
+        const sizes = ["large", "medium", "small"] as const;
+        const appEl = document.getElementById("app")!;
+        const containerHeight = window.innerHeight;
+
+        grid.classList.remove("overflow-scroll");
+        for (const size of sizes) {
+          appEl.className = appEl.className.replace(/size-\w+/, `size-${size}`);
+          await new Promise(r => requestAnimationFrame(r));
+          if (grid.scrollHeight <= containerHeight) break;
+        }
+
+        // If still overflowing at small, fall back to scroll
+        if (grid.scrollHeight > containerHeight) {
+          grid.classList.add("overflow-scroll");
+        }
+      }
+      return;
+    }
+
     const width = grid.scrollWidth;
     const height = grid.scrollHeight;
     await appWindow.setSize(
@@ -172,6 +197,20 @@ async function init(): Promise<void> {
   await initTooltip();
   initPreferences(applyConfig);
   initMascotGrid(app);
+
+  // Create split-view green button
+  const splitBtn = document.createElement("button");
+  splitBtn.className = "split-view-btn";
+  splitBtn.title = "Enter Split View";
+  splitBtn.addEventListener("click", async (e) => {
+    e.stopPropagation(); // Prevent window drag
+    await invoke("toggle_split_view");
+  });
+  app.appendChild(splitBtn);
+
+  // Split View state
+  let _isSplitView = false;
+  let _preSplitOrientation: string | null = null;
 
   // Load and apply initial config
   let config = await invoke<Config>("get_config");
@@ -298,6 +337,47 @@ async function init(): Promise<void> {
 
       await invoke("save_config", { config });
     }, 150);
+  });
+
+  // Detect Split View (fullscreen) state changes via resize events
+  await listen("tauri://resize", async () => {
+    const inSplitView = await invoke<boolean>("is_split_view");
+    if (inSplitView === _isSplitView) return;
+    _isSplitView = inSplitView;
+
+    if (inSplitView) {
+      // Entering Split View
+      _preSplitOrientation = config.orientation;
+      app.classList.add("split-view");
+      config.orientation = "vertical";
+
+      // Apply overflow mode
+      const grid = document.querySelector(".mascot-grid") as HTMLElement;
+      if (grid) {
+        const overflow = config.splitView?.overflowBehavior ?? "scroll";
+        grid.classList.toggle("overflow-scroll", overflow === "scroll");
+      }
+
+      splitBtn.title = "Exit Split View";
+      applyConfig(config);
+    } else {
+      // Exiting Split View
+      app.classList.remove("split-view");
+
+      const grid = document.querySelector(".mascot-grid") as HTMLElement;
+      if (grid) {
+        grid.classList.remove("overflow-scroll");
+      }
+
+      if (_preSplitOrientation) {
+        config.orientation = _preSplitOrientation;
+        _preSplitOrientation = null;
+      }
+
+      splitBtn.title = "Enter Split View";
+      applyConfig(config);
+      resizeWindow();
+    }
   });
 }
 
