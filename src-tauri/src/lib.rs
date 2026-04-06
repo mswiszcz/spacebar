@@ -5,6 +5,7 @@ mod commands;
 mod config;
 mod server;
 mod state;
+mod split_view;
 
 use config::load_config;
 use state::SessionStore;
@@ -103,6 +104,9 @@ pub fn run() {
 
             // Apply background blur (private macOS API, same as iTerm2)
             let _ = set_window_blur_radius(&window, cfg.theme.blur_radius);
+
+            // Configure window for Split View eligibility
+            split_view::configure_for_split_view(&window);
             let _ = window.set_position(tauri::PhysicalPosition::new(
                 cfg.position.x as i32,
                 cfg.position.y as i32,
