@@ -33,13 +33,14 @@ Responsibilities:
 - Listen for `NSWindowDidEnterFullScreenNotification` and `NSWindowDidExitFullScreenNotification` to emit Tauri events (`split-view-entered`, `split-view-exited`)
 
 **Window resizability:**
-- Set `resizable: true` in `tauri.conf.json` (required for Split View)
-- Constrain min width to mascot size + padding (~70px), max width to ~120px to keep the strip thin
-- No max height constraint (macOS controls height in Split View)
+- Keep `resizable: false` in `tauri.conf.json` (preserves normal floating bar behavior)
+- Call `window.set_resizable(true)` immediately before triggering `toggleFullScreen:` when entering Split View
+- Call `window.set_resizable(false)` on exit (after `NSWindowDidExitFullScreenNotification`)
+- This ensures the floating bar cannot be accidentally drag-resized in normal mode
 
 ### 2. Tauri Commands
 
-**`toggle_split_view`** — calls native `toggleFullScreen:` on the main window. Single command handles both enter and exit since macOS toggles the state.
+**`toggle_split_view`** — sets resizable, then calls native `toggleFullScreen:` on the main window. Single command handles both enter and exit since macOS toggles the state. Resizability is toggled as part of the command flow.
 
 ### 3. Frontend: Green Button
 
