@@ -127,10 +127,10 @@ pub fn toggle_split_view(app: AppHandle) -> Result<(), String> {
     if entering {
         window.set_resizable(true).map_err(|e| format!("{e}"))?;
         let _ = app.set_activation_policy(tauri::ActivationPolicy::Regular);
-    } else {
-        window.set_resizable(false).map_err(|e| format!("{e}"))?;
-        let _ = app.set_activation_policy(tauri::ActivationPolicy::Accessory);
     }
+    // Note: on exit, resizable(false) and Accessory policy are set by the frontend
+    // after the fullscreen exit animation completes (via tauri://resize listener),
+    // because macOS requires the window to remain resizable during the transition.
 
     unsafe {
         use objc::{msg_send, sel, sel_impl};
@@ -147,4 +147,14 @@ pub fn is_split_view(app: AppHandle) -> Result<bool, String> {
         .get_webview_window("main")
         .ok_or("Main window not found")?;
     Ok(crate::split_view::is_fullscreen(&window))
+}
+
+#[tauri::command]
+pub fn restore_after_split_view(app: AppHandle) -> Result<(), String> {
+    let window = app
+        .get_webview_window("main")
+        .ok_or("Main window not found")?;
+    window.set_resizable(false).map_err(|e| format!("{e}"))?;
+    let _ = app.set_activation_policy(tauri::ActivationPolicy::Accessory);
+    Ok(())
 }

@@ -96,8 +96,9 @@ function applyConfig(config: Config): void {
   root.style.setProperty("--bg-opacity", String(config.theme.backgroundOpacity));
   root.style.setProperty("--accent-color", config.theme.accentColor);
 
-  // Apply size class
-  app.className = `size-${config.mascotSize}`;
+  // Apply size class (preserve other classes like split-view)
+  app.classList.remove("size-small", "size-medium", "size-large");
+  app.classList.add(`size-${config.mascotSize}`);
 
   // Apply label visibility
   document.querySelectorAll(".mascot-label").forEach((el) => {
@@ -136,7 +137,8 @@ async function resizeWindow(): Promise<void> {
 
         grid.classList.remove("overflow-scroll");
         for (const size of sizes) {
-          appEl.className = appEl.className.replace(/size-\w+/, `size-${size}`);
+          appEl.classList.remove("size-small", "size-medium", "size-large");
+          appEl.classList.add(`size-${size}`);
           await new Promise(r => requestAnimationFrame(r));
           if (grid.scrollHeight <= containerHeight) break;
         }
@@ -339,45 +341,51 @@ async function init(): Promise<void> {
     }, 150);
   });
 
-  // Detect Split View (fullscreen) state changes via resize events
-  await listen("tauri://resize", async () => {
-    const inSplitView = await invoke<boolean>("is_split_view");
-    if (inSplitView === _isSplitView) return;
-    _isSplitView = inSplitView;
+  // Detect Split View (fullscreen) state changes via resize events (debounced)
+  let splitViewDebounce: number | null = null;
+  await listen("tauri://resize", () => {
+    if (splitViewDebounce !== null) clearTimeout(splitViewDebounce);
+    splitViewDebounce = window.setTimeout(async () => {
+      splitViewDebounce = null;
+      const inSplitView = await invoke<boolean>("is_split_view");
+      if (inSplitView === _isSplitView) return;
+      _isSplitView = inSplitView;
 
-    if (inSplitView) {
-      // Entering Split View
-      _preSplitOrientation = config.orientation;
-      app.classList.add("split-view");
-      config.orientation = "vertical";
+      if (inSplitView) {
+        // Entering Split View
+        _preSplitOrientation = config.orientation;
+        app.classList.add("split-view");
+        config.orientation = "vertical";
 
-      // Apply overflow mode
-      const grid = document.querySelector(".mascot-grid") as HTMLElement;
-      if (grid) {
-        const overflow = config.splitView?.overflowBehavior ?? "scroll";
-        grid.classList.toggle("overflow-scroll", overflow === "scroll");
+        // Apply overflow mode
+        const grid = document.querySelector(".mascot-grid") as HTMLElement;
+        if (grid) {
+          const overflow = config.splitView?.overflowBehavior ?? "scroll";
+          grid.classList.toggle("overflow-scroll", overflow === "scroll");
+        }
+
+        splitBtn.title = "Exit Split View";
+        applyConfig(config);
+      } else {
+        // Exiting Split View — restore window state after animation completes
+        await invoke("restore_after_split_view");
+        app.classList.remove("split-view");
+
+        const grid = document.querySelector(".mascot-grid") as HTMLElement;
+        if (grid) {
+          grid.classList.remove("overflow-scroll");
+        }
+
+        if (_preSplitOrientation) {
+          config.orientation = _preSplitOrientation;
+          _preSplitOrientation = null;
+        }
+
+        splitBtn.title = "Enter Split View";
+        applyConfig(config);
+        resizeWindow();
       }
-
-      splitBtn.title = "Exit Split View";
-      applyConfig(config);
-    } else {
-      // Exiting Split View
-      app.classList.remove("split-view");
-
-      const grid = document.querySelector(".mascot-grid") as HTMLElement;
-      if (grid) {
-        grid.classList.remove("overflow-scroll");
-      }
-
-      if (_preSplitOrientation) {
-        config.orientation = _preSplitOrientation;
-        _preSplitOrientation = null;
-      }
-
-      splitBtn.title = "Enter Split View";
-      applyConfig(config);
-      resizeWindow();
-    }
+    }, 100);
   });
 }
 

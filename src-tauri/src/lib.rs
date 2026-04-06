@@ -90,6 +90,7 @@ pub fn run() {
             commands::get_version,
             commands::toggle_split_view,
             commands::is_split_view,
+            commands::restore_after_split_view,
         ])
         .setup(move |app| {
             // Hide from Dock — tray-only app
