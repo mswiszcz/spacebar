@@ -19,13 +19,14 @@ html, body {
 
 .mascot-grid {
   display: inline-flex;
-  gap: 12px;
+  gap: var(--group-gap, 12px);
   padding: 8px;
   align-items: center;
 }
 
 .mascot-grid.vertical {
   flex-direction: column;
+  align-items: stretch;
 }
 
 /* Group containers */
@@ -49,6 +50,14 @@ html, body {
   margin-bottom: 4px;
   min-height: 12px;
   cursor: default;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mascot-grid.vertical .mascot-group {
+  padding-bottom: 16px;
+  align-self: stretch;
 }
 
 .mascot-group.anonymous .group-label {
@@ -58,12 +67,13 @@ html, body {
 
 .group-mascots {
   display: flex;
-  gap: 8px;
+  gap: var(--entity-gap, 8px);
   align-items: center;
 }
 
 .mascot-grid.vertical .group-mascots {
   flex-direction: column;
+  margin-top: 8px;
 }
 
 .group-rename-input {
@@ -86,9 +96,26 @@ html, body {
   width: var(--mascot-size, 48px);
 }
 
+/* Separator between entities */
+.entity-separator {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 1px;
+  flex-shrink: 0;
+  align-self: center;
+  width: 1px;
+  height: 50%;
+}
+
+.mascot-grid.vertical .entity-separator,
+.split-view .entity-separator {
+  width: 50%;
+  height: 1px;
+}
+
 .mascot-item:hover {
   transform: scale(1.1);
 }
+
 
 .mascot-item:active {
   transform: scale(0.95);
@@ -116,6 +143,10 @@ html, body {
   text-overflow: ellipsis;
 }
 
+.hide-labels .mascot-label {
+  display: none;
+}
+
 /* Size variants */
 .size-small .mascot-item { --mascot-size: 32px; }
 .size-small .mascot-svg { --mascot-size: 32px; }
@@ -123,6 +154,98 @@ html, body {
 .size-medium .mascot-svg { --mascot-size: 48px; }
 .size-large .mascot-item { --mascot-size: 64px; }
 .size-large .mascot-svg { --mascot-size: 64px; }
+
+/* Icon mode sizes (smaller than mascot) */
+.size-small .mascot-item.icon-mode { --icon-size: 24px; }
+.size-medium .mascot-item.icon-mode { --icon-size: 36px; }
+.size-large .mascot-item.icon-mode { --icon-size: 48px; }
+
+.mascot-item.icon-mode {
+  width: var(--icon-size, 36px);
+}
+
+/* Icon wrapper */
+.icon-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--icon-size, 36px);
+  height: var(--icon-size, 36px);
+  color: var(--accent-color, #E8825A);
+}
+
+.icon-wrapper svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* Status dot */
+.status-dot {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  border: 1.5px solid var(--bg-color, #1a1a2e);
+  display: none;
+  z-index: 1;
+}
+
+/* Corner positions */
+.dot-top-left { top: -1px; left: -1px; }
+.dot-top-right { top: -1px; right: -1px; }
+.dot-bottom-left { bottom: -1px; left: -1px; }
+.dot-bottom-right { bottom: -1px; right: -1px; }
+
+/* State colors and visibility */
+.status-dot.dot-thinking,
+.status-dot.dot-compacting {
+  display: block;
+  background: #facc15;
+  animation: dotPulse 1.5s ease-in-out infinite;
+}
+
+.status-dot.dot-needs-input,
+.status-dot.dot-notification {
+  display: block;
+  background: #60a5fa;
+  animation: dotPulse 1s ease-in-out infinite;
+}
+
+.status-dot.dot-error {
+  display: block;
+  background: #ef4444;
+}
+
+/* Dot pulse animation */
+@keyframes dotPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(0.8); }
+}
+
+/* Icon state animations */
+.icon-mode.state-thinking .icon-wrapper,
+.icon-mode.state-compacting .icon-wrapper {
+  animation: iconPulseOpacity 2s ease-in-out infinite;
+}
+
+.icon-mode.state-needs-input .icon-wrapper,
+.icon-mode.state-notification .icon-wrapper {
+  animation: iconPulseScale 1s ease-in-out infinite;
+}
+
+.icon-mode.state-sleeping .icon-wrapper {
+  opacity: 0.5;
+}
+
+@keyframes iconPulseOpacity {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+@keyframes iconPulseScale {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
 
 /* Tooltip window body */
 body.tooltip-window {
@@ -155,6 +278,26 @@ body.tooltip-window {
   min-width: 50px;
 }
 
+/* ── Empty state (split view, no agents) ─────────── */
+
+.empty-state {
+  display: none;
+  position: fixed;
+  inset: 0;
+  align-items: center;
+  justify-content: center;
+}
+
+.empty-state.visible {
+  display: flex;
+}
+
+.empty-state-icon {
+  width: 64px;
+  height: 64px;
+  opacity: 0.15;
+}
+
 /* ── Split View green button ─────────────────────── */
 
 .split-view-btn {
@@ -176,7 +319,8 @@ body.tooltip-window {
   justify-content: center;
 }
 
-#app:hover .split-view-btn {
+/* Button visibility controlled by JS via .split-view-btn-visible class */
+.split-view-btn.split-view-btn-visible {
   opacity: 1;
 }
 
@@ -201,12 +345,14 @@ body.tooltip-window {
 /* ── Split View layout overrides ─────────────────── */
 
 #app.split-view {
+  display: flex;
+  justify-content: center;
   height: 100vh;
 }
 
 .split-view .mascot-grid {
   flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
   height: 100%;
 }
 
