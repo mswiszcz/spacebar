@@ -20,6 +20,10 @@ pub struct Config {
     pub snap: SnapConfig,
     #[serde(default)]
     pub split_view: SplitViewConfig,
+    #[serde(default)]
+    pub display_modes: HashMap<String, String>,
+    #[serde(default = "default_status_dot_corner")]
+    pub status_dot_corner: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -40,6 +44,10 @@ pub struct SoundConfig {
     pub muted: Vec<String>,
 }
 
+fn default_status_dot_corner() -> String {
+    "top-left".into()
+}
+
 fn default_pack() -> String {
     "default".into()
 }
@@ -51,6 +59,18 @@ pub struct ThemeConfig {
     pub background_opacity: f64,
     pub blur_radius: u32,
     pub accent_color: String,
+    #[serde(default = "default_entity_gap")]
+    pub entity_gap: u32,
+    #[serde(default = "default_group_gap")]
+    pub group_gap: u32,
+}
+
+fn default_entity_gap() -> u32 {
+    8
+}
+
+fn default_group_gap() -> u32 {
+    12
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -106,10 +126,14 @@ impl Default for Config {
                 background_opacity: 0.8,
                 blur_radius: 20,
                 accent_color: "#E8825A".into(),
+                entity_gap: default_entity_gap(),
+                group_gap: default_group_gap(),
             },
             group_renames: HashMap::new(),
             snap: SnapConfig::default(),
             split_view: SplitViewConfig::default(),
+            display_modes: HashMap::new(),
+            status_dot_corner: default_status_dot_corner(),
         }
     }
 }
@@ -197,6 +221,28 @@ mod tests {
         }"##;
         let parsed: Config = serde_json::from_str(json).unwrap();
         assert_eq!(parsed.split_view.overflow_behavior, "scroll");
+    }
+
+    #[test]
+    fn test_display_modes_backward_compat() {
+        let json = r##"{
+            "orientation": "horizontal",
+            "alwaysOnTop": true,
+            "mascotSize": "medium",
+            "showLabels": true,
+            "showTooltips": true,
+            "position": {"x": 100, "y": 100},
+            "sound": {"enabled": true, "volume": 0.5},
+            "theme": {
+                "backgroundColor": "#1a1a2e",
+                "backgroundOpacity": 0.8,
+                "blurRadius": 20,
+                "accentColor": "#E8825A"
+            }
+        }"##;
+        let parsed: Config = serde_json::from_str(json).unwrap();
+        assert!(parsed.display_modes.is_empty());
+        assert_eq!(parsed.status_dot_corner, "top-left");
     }
 
     #[test]
