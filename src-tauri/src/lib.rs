@@ -88,6 +88,8 @@ pub fn run() {
             commands::pick_sound_file,
             commands::save_position,
             commands::get_version,
+            commands::toggle_split_view,
+            commands::is_split_view,
         ])
         .setup(move |app| {
             // Hide from Dock — tray-only app

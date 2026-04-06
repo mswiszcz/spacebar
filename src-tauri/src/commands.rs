@@ -114,3 +114,37 @@ pub fn set_blur_radius(app: AppHandle, radius: u32) -> Result<(), String> {
         .ok_or("Main window not found")?;
     crate::blur::set_window_blur_radius(&window, radius)
 }
+
+#[allow(deprecated, unexpected_cfgs)]
+#[tauri::command]
+pub fn toggle_split_view(app: AppHandle) -> Result<(), String> {
+    let window = app
+        .get_webview_window("main")
+        .ok_or("Main window not found")?;
+
+    let entering = !crate::split_view::is_fullscreen(&window);
+
+    if entering {
+        window.set_resizable(true).map_err(|e| format!("{e}"))?;
+        let _ = app.set_activation_policy(tauri::ActivationPolicy::Regular);
+    } else {
+        window.set_resizable(false).map_err(|e| format!("{e}"))?;
+        let _ = app.set_activation_policy(tauri::ActivationPolicy::Accessory);
+    }
+
+    unsafe {
+        use objc::{msg_send, sel, sel_impl};
+        let ns_window = window.ns_window().map_err(|e| format!("{e}"))? as cocoa::base::id;
+        let _: () = msg_send![ns_window, toggleFullScreen: cocoa::base::nil];
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
+pub fn is_split_view(app: AppHandle) -> Result<bool, String> {
+    let window = app
+        .get_webview_window("main")
+        .ok_or("Main window not found")?;
+    Ok(crate::split_view::is_fullscreen(&window))
+}
