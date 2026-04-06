@@ -13,8 +13,23 @@ let displayModes: Record<string, string> = {};
 let statusDotCorner = "top-left";
 
 export function updateDisplayConfig(modes: Record<string, string>, corner: string): void {
+  const changed = JSON.stringify(displayModes) !== JSON.stringify(modes) || statusDotCorner !== corner;
   displayModes = modes;
   statusDotCorner = corner;
+  if (changed) rebuildAllSessions();
+}
+
+function rebuildAllSessions(): void {
+  const grid = document.querySelector(".mascot-grid") as HTMLElement;
+  if (!grid) return;
+  // Clear tracked state so sessions get fully recreated
+  lastKnownState.clear();
+  sleepTimers.forEach((timer) => clearTimeout(timer));
+  sleepTimers.clear();
+  // Remove all session elements (groups stay, sessions get re-added by renderGroups)
+  grid.querySelectorAll(".mascot-item").forEach((el) => el.remove());
+  grid.querySelectorAll(".entity-separator").forEach((el) => el.remove());
+  renderGroups(grid);
 }
 
 export function markSilentUpdate(sessionId: string): void {

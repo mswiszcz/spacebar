@@ -1,5 +1,6 @@
 import { invoke, convertFileSrc } from "@tauri-apps/api/core";
 import { emit } from "@tauri-apps/api/event";
+import { hasIcon } from "./mascots/registry";
 
 interface Config {
   orientation: string;
@@ -495,6 +496,7 @@ function renderSoundSlots(config: Config, save: () => Promise<void>): void {
   };
 }
 
+// Called once during init() — container listener is not cleaned up on re-render
 function renderDisplayModes(config: Config, save: () => Promise<void>): void {
   if (!config.displayModes) config.displayModes = {};
   const container = document.getElementById("pref-display-modes");
@@ -504,12 +506,13 @@ function renderDisplayModes(config: Config, save: () => Promise<void>): void {
 
   container.innerHTML = Array.from(agentTypes).map(agent => {
     const mode = config.displayModes[agent] ?? "mascot";
+    const canUseIcon = hasIcon(agent);
     return `
-      <div class="display-mode-row" style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
-        <span style="font-size:11px;color:#aaa;min-width:80px;">${agent}</span>
+      <div class="display-mode-row">
+        <span class="display-mode-agent">${agent}</span>
         <select class="prefs-select" data-agent="${agent}" style="min-width:90px;">
           <option value="mascot" ${mode === "mascot" ? "selected" : ""}>Mascot</option>
-          <option value="icon" ${mode === "icon" ? "selected" : ""}>Icon</option>
+          ${canUseIcon ? `<option value="icon" ${mode === "icon" ? "selected" : ""}>Icon</option>` : ""}
         </select>
       </div>`;
   }).join("");

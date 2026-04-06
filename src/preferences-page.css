@@ -471,3 +471,18 @@ body {
   color: #484f58;
   font-size: 11px;
 }
+
+/* ── Display mode ────────────────────────────────── */
+
+.display-mode-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.display-mode-agent {
+  font-size: 11px;
+  color: #aaa;
+  min-width: 80px;
+}
