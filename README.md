@@ -15,7 +15,23 @@ Built with [Tauri v2](https://v2.tauri.app), Rust, and TypeScript.
 - **System tray** — Lives in the menu bar, hidden from Dock
 - **CLI integration** — Any agent can connect via simple CLI commands
 
-## Prerequisites
+## Install
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/mswiszcz/spacebar/main/install.sh | bash
+```
+
+This installs `Spacebar.app` to `/Applications` and the `spacebar` CLI to `/usr/local/bin`.
+
+To install a specific version:
+
+```bash
+SPACEBAR_VERSION=0.5.0 curl -fsSL https://raw.githubusercontent.com/mswiszcz/spacebar/main/install.sh | bash
+```
+
+## Building from Source
+
+### Prerequisites
 
 - macOS 13+
 - [Rust](https://rustup.rs/) (latest stable)
