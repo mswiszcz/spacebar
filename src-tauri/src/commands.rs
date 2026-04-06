@@ -126,6 +126,7 @@ pub fn toggle_split_view(app: AppHandle) -> Result<(), String> {
 
     if entering {
         window.set_resizable(true).map_err(|e| format!("{e}"))?;
+        let _ = window.set_always_on_top(false);
         let _ = app.set_activation_policy(tauri::ActivationPolicy::Regular);
     }
     // Note: on exit, resizable(false) and Accessory policy are set by the frontend
@@ -155,6 +156,9 @@ pub fn restore_after_split_view(app: AppHandle) -> Result<(), String> {
         .get_webview_window("main")
         .ok_or("Main window not found")?;
     window.set_resizable(false).map_err(|e| format!("{e}"))?;
+    // Restore alwaysOnTop from config
+    let cfg = crate::config::load_config();
+    let _ = window.set_always_on_top(cfg.always_on_top);
     let _ = app.set_activation_policy(tauri::ActivationPolicy::Accessory);
     Ok(())
 }
