@@ -4,7 +4,7 @@ import { MascotState } from "./mascots/types";
 import { invoke } from "@tauri-apps/api/core";
 import { playStateSound } from "./sound";
 import { showTooltip, hideTooltip } from "./tooltip";
-import { DEFAULT_STATE_COLORS } from "./state-defaults";
+import { DEFAULT_DOT_COLORS, DEFAULT_ICON_COLORS } from "./state-defaults";
 
 const SLEEP_DELAY_MS = 30_000;
 const sleepTimers = new Map<string, number>();
@@ -12,13 +12,13 @@ const silentUpdates = new Set<string>();
 const lastKnownState = new Map<string, string>();
 let displayModes: Record<string, string> = {};
 let statusDotCorner = "top-left";
-let statesConfig: Record<string, { color?: string }> = {};
+let statesConfig: Record<string, { iconColor?: string; dotColor?: string }> = {};
 let accentColor = "#E8825A";
 
 export function updateDisplayConfig(
   modes: Record<string, string>,
   corner: string,
-  states: Record<string, { color?: string }>,
+  states: Record<string, { iconColor?: string; dotColor?: string }>,
   accent: string,
 ): void {
   const changed = JSON.stringify(displayModes) !== JSON.stringify(modes)
@@ -224,10 +224,15 @@ function createMascotElement(session: Session): HTMLElement {
     iconWrapper.className = "icon-wrapper";
     iconWrapper.innerHTML = iconDef.svg;
 
+    const iconSvg = iconWrapper.querySelector("svg") as SVGElement;
+    if (iconSvg) {
+      iconSvg.style.fill = statesConfig["idle"]?.iconColor ?? DEFAULT_ICON_COLORS["idle"] ?? accentColor;
+    }
+
     const dot = document.createElement("div");
     dot.className = `status-dot dot-${statusDotCorner}`;
     dot.style.display = "block";
-    dot.style.background = statesConfig["idle"]?.color ?? DEFAULT_STATE_COLORS["idle"] ?? accentColor;
+    dot.style.background = statesConfig["idle"]?.dotColor ?? DEFAULT_DOT_COLORS["idle"] ?? accentColor;
 
     wrapper.appendChild(iconWrapper);
     wrapper.appendChild(dot);
@@ -303,7 +308,11 @@ function updateMascotElement(el: HTMLElement, session: Session): void {
     if (dot) {
       dot.className = `status-dot dot-${statusDotCorner}`;
       dot.style.display = "block";
-      dot.style.background = statesConfig[state]?.color ?? DEFAULT_STATE_COLORS[state] ?? accentColor;
+      dot.style.background = statesConfig[state]?.dotColor ?? DEFAULT_DOT_COLORS[state] ?? accentColor;
+    }
+    const iconSvg = el.querySelector(".icon-wrapper svg") as SVGElement;
+    if (iconSvg) {
+      iconSvg.style.fill = statesConfig[state]?.iconColor ?? DEFAULT_ICON_COLORS[state] ?? accentColor;
     }
   } else {
     const mascot = getMascot(session.agent);

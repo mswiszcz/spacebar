@@ -1,7 +1,7 @@
 import { invoke, convertFileSrc } from "@tauri-apps/api/core";
 import { emit } from "@tauri-apps/api/event";
 import { hasIcon } from "./mascots/registry";
-import { DEFAULT_STATE_COLORS } from "./state-defaults";
+import { DEFAULT_DOT_COLORS, DEFAULT_ICON_COLORS } from "./state-defaults";
 
 interface Config {
   orientation: string;
@@ -13,7 +13,7 @@ interface Config {
   soundEnabled: boolean;
   soundVolume: number;
   soundPack: string;
-  states: Record<string, { color?: string; soundOverride?: string; muted?: boolean }>;
+  states: Record<string, { iconColor?: string; dotColor?: string; soundOverride?: string; muted?: boolean }>;
   theme: {
     backgroundColor: string;
     backgroundOpacity: number;
@@ -458,12 +458,15 @@ function renderStateSlots(config: Config, save: () => Promise<void>): void {
     const source = hasOverride
       ? stateConf!.soundOverride!.split("/").pop()
       : hasSound ? "Pack default" : "";
-    const color = stateConf?.color ?? "";
+    const iconColor = stateConf?.iconColor ?? "";
+    const dotColor = stateConf?.dotColor ?? "";
     return `
       <div class="state-slot${isMuted ? " state-slot-muted" : ""}" data-state="${key}">
         <span class="state-slot-label">${label}</span>
-        <input type="color" class="state-slot-color" data-action="color" value="${color || DEFAULT_STATE_COLORS[key] || config.theme.accentColor}" title="State color">
-        ${color ? `<button class="sound-slot-btn sound-slot-reset" data-action="reset-color" title="Reset color">&#10005;</button>` : ""}
+        <input type="color" class="state-slot-color" data-action="icon-color" value="${iconColor || DEFAULT_ICON_COLORS[key] || config.theme.accentColor}" title="Icon color">
+        ${iconColor ? `<button class="sound-slot-btn sound-slot-reset" data-action="reset-icon-color" title="Reset icon color">&#10005;</button>` : ""}
+        <input type="color" class="state-slot-color" data-action="dot-color" value="${dotColor || DEFAULT_DOT_COLORS[key] || config.theme.accentColor}" title="Dot color">
+        ${dotColor ? `<button class="sound-slot-btn sound-slot-reset" data-action="reset-dot-color" title="Reset dot color">&#10005;</button>` : ""}
         ${hasSound ? `
           <button class="sound-slot-btn" data-action="mute" title="${isMuted ? "Unmute" : "Mute"}">${isMuted ? "&#128263;" : "&#128264;"}</button>
           <span class="state-slot-source" title="${hasOverride ? stateConf!.soundOverride! : ""}">${source}</span>
@@ -493,10 +496,15 @@ function renderStateSlots(config: Config, save: () => Promise<void>): void {
       }
       await save();
       renderStateSlots(config, save);
-    } else if (action === "color") {
+    } else if (action === "icon-color" || action === "dot-color") {
       // Handled by input event below
-    } else if (action === "reset-color") {
-      delete config.states[state].color;
+    } else if (action === "reset-icon-color") {
+      delete config.states[state].iconColor;
+      cleanupStateEntry(config, state);
+      await save();
+      renderStateSlots(config, save);
+    } else if (action === "reset-dot-color") {
+      delete config.states[state].dotColor;
       cleanupStateEntry(config, state);
       await save();
       renderStateSlots(config, save);
@@ -528,7 +536,12 @@ function renderStateSlots(config: Config, save: () => Promise<void>): void {
       const slot = input.closest(".state-slot") as HTMLElement;
       const state = slot.dataset.state!;
       if (!config.states[state]) config.states[state] = {};
-      config.states[state].color = input.value;
+      const action = input.dataset.action;
+      if (action === "icon-color") {
+        config.states[state].iconColor = input.value;
+      } else if (action === "dot-color") {
+        config.states[state].dotColor = input.value;
+      }
       await save();
     });
     // Re-render on change (mouseup after picker closes) to show reset button
@@ -539,7 +552,7 @@ function renderStateSlots(config: Config, save: () => Promise<void>): void {
 /** Remove empty state entries to keep config clean */
 function cleanupStateEntry(config: Config, state: string): void {
   const entry = config.states[state];
-  if (entry && !entry.color && !entry.soundOverride && !entry.muted) {
+  if (entry && !entry.iconColor && !entry.dotColor && !entry.soundOverride && !entry.muted) {
     delete config.states[state];
   }
 }

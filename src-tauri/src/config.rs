@@ -42,7 +42,8 @@ pub struct Position {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct StateConfig {
-    pub color: Option<String>,
+    pub icon_color: Option<String>,
+    pub dot_color: Option<String>,
     pub sound_override: Option<String>,
     #[serde(default)]
     pub muted: bool,
@@ -191,9 +192,10 @@ mod tests {
 
     #[test]
     fn test_state_config_deserializes() {
-        let json = r##"{"color": "#ff0000", "muted": true}"##;
+        let json = r##"{"iconColor": "#ff0000", "dotColor": "#00ff00", "muted": true}"##;
         let parsed: StateConfig = serde_json::from_str(json).unwrap();
-        assert_eq!(parsed.color, Some("#ff0000".into()));
+        assert_eq!(parsed.icon_color, Some("#ff0000".into()));
+        assert_eq!(parsed.dot_color, Some("#00ff00".into()));
         assert!(parsed.muted);
         assert!(parsed.sound_override.is_none());
     }

@@ -17,7 +17,7 @@ interface Config {
   soundEnabled: boolean;
   soundVolume: number;
   soundPack: string;
-  states: Record<string, { color?: string; soundOverride?: string; muted?: boolean }>;
+  states: Record<string, { iconColor?: string; dotColor?: string; soundOverride?: string; muted?: boolean }>;
   theme: {
     backgroundColor: string;
     backgroundOpacity: number;
