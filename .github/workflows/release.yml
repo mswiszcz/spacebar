@@ -84,11 +84,11 @@ jobs:
 
       - name: Package tarball
         run: |
-          TMPDIR="$(mktemp -d)"
-          cp -R target/release/bundle/macos/Spacebar.app "$TMPDIR/"
-          cp target/release/spacebar "$TMPDIR/"
-          tar -czf Spacebar_aarch64.tar.gz -C "$TMPDIR" Spacebar.app spacebar
-          rm -rf "$TMPDIR"
+          STAGING_DIR="$(mktemp -d)"
+          cp -R target/release/bundle/macos/Spacebar.app "$STAGING_DIR/"
+          cp target/release/spacebar "$STAGING_DIR/"
+          tar -czf Spacebar_aarch64.tar.gz -C "$STAGING_DIR" Spacebar.app spacebar
+          rm -rf "$STAGING_DIR"
 
       - name: Create GitHub release
         env:
