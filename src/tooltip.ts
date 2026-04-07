@@ -12,10 +12,8 @@ import { invoke } from "@tauri-apps/api/core";
 let tooltipWindow: WebviewWindow | null = null;
 let showTooltips = true;
 let generation = 0;
-let activeGeneration = -1;
-let showTimer: number | null = null;
 
-const SHOW_DELAY_MS = 200;
+const MAX_SIZE = new PhysicalSize(500, 200);
 
 export async function initTooltip(): Promise<void> {
   tooltipWindow = await WebviewWindow.getByLabel("tooltip");
@@ -35,11 +33,10 @@ export async function initTooltip(): Promise<void> {
     async (event) => {
       const { width, height, generation: readyGen } = event.payload;
 
-      // Only proceed if this ready event matches the currently active show
-      if (!tooltipWindow || activeGeneration !== readyGen) return;
+      if (!tooltipWindow || generation !== readyGen) return;
 
       const monitor = await currentMonitor();
-      if (!monitor || activeGeneration !== readyGen) return;
+      if (!monitor || generation !== readyGen) return;
 
       const monitorPos = monitor.position;
       const monitorSize = monitor.size;
@@ -53,9 +50,7 @@ export async function initTooltip(): Promise<void> {
       }
 
       // Clamp horizontally
-      if (x < monitorPos.x + 4) {
-        x = monitorPos.x + 4;
-      }
+      if (x < monitorPos.x + 4) x = monitorPos.x + 4;
       if (x + width > monitorPos.x + monitorSize.width - 4) {
         x = monitorPos.x + monitorSize.width - width - 4;
       }
@@ -65,11 +60,19 @@ export async function initTooltip(): Promise<void> {
         y = monitorPos.y + monitorSize.height - height - 4;
       }
 
-      if (activeGeneration !== readyGen) return;
+      if (generation !== readyGen) return;
 
-      await tooltipWindow.setSize(new PhysicalSize(width, height));
-      await tooltipWindow.setPosition(new PhysicalPosition(x, y));
-      await tooltipWindow.show();
+      try {
+        await tooltipWindow.setSize(
+          new PhysicalSize(Math.round(width), Math.round(height)),
+        );
+        await tooltipWindow.setPosition(
+          new PhysicalPosition(Math.round(x), Math.round(y)),
+        );
+        await tooltipWindow.show();
+      } catch {
+        /* ignore positioning errors */
+      }
     },
   );
 }
@@ -81,24 +84,10 @@ let lastAnchorHeight = 0;
 export function showTooltip(session: Session, anchor: HTMLElement): void {
   if (!showTooltips || !tooltipWindow) return;
 
-  // Cancel any pending show
-  if (showTimer !== null) {
-    clearTimeout(showTimer);
-    showTimer = null;
-  }
-
-  // Bump generation immediately so any in-flight ready events are stale
   generation++;
   const thisGen = generation;
 
-  showTimer = window.setTimeout(() => {
-    showTimer = null;
-    // If a hide happened while we were waiting, abort
-    if (activeGeneration === -1 && generation !== thisGen) return;
-
-    activeGeneration = thisGen;
-    doShowTooltip(session, anchor, thisGen);
-  }, SHOW_DELAY_MS);
+  doShowTooltip(session, anchor, thisGen);
 }
 
 async function doShowTooltip(
@@ -106,14 +95,23 @@ async function doShowTooltip(
   anchor: HTMLElement,
   gen: number,
 ): Promise<void> {
-  if (!tooltipWindow || activeGeneration !== gen) return;
+  if (!tooltipWindow || generation !== gen) return;
+
+  // Reset to max size so content isn't constrained by a previous small size
+  try {
+    await tooltipWindow.setSize(MAX_SIZE);
+  } catch {
+    /* ignore */
+  }
+
+  if (generation !== gen) return;
 
   const mainPos = await getCurrentWindow().outerPosition();
-  if (activeGeneration !== gen) return;
+  if (generation !== gen) return;
 
   const rect = anchor.getBoundingClientRect();
   const monitor = await currentMonitor();
-  if (activeGeneration !== gen) return;
+  if (generation !== gen) return;
 
   const scaleFactor = monitor?.scaleFactor ?? 1;
 
@@ -131,18 +129,10 @@ async function doShowTooltip(
 }
 
 export function hideTooltip(): void {
-  // Cancel any pending debounced show
-  if (showTimer !== null) {
-    clearTimeout(showTimer);
-    showTimer = null;
-  }
-
   generation++;
-  activeGeneration = -1;
 
   if (!tooltipWindow) return;
 
-  // Fire-and-forget: hide immediately, no awaiting
   emit("tooltip:hide");
-  tooltipWindow.hide();
+  tooltipWindow.hide().catch(() => {});
 }

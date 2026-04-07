@@ -1,5 +1,6 @@
 import { MascotDefinition, IconDefinition } from "./types";
 import { claudeCode } from "./claude-code";
+import { cursor } from "./cursor";
 
 const FALLBACK_ICON: IconDefinition = {
   svg: `<svg viewBox="0 0 24 24" fill="currentColor">
@@ -9,6 +10,7 @@ const FALLBACK_ICON: IconDefinition = {
 
 const mascots: Record<string, MascotDefinition> = {
   "claude-code": claudeCode,
+  cursor,
 };
 
 export function getMascot(agent: string): MascotDefinition {

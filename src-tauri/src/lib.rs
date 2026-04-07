@@ -51,12 +51,14 @@ pub fn rebuild_tray_menu(app: &AppHandle, store: &SessionStore) {
 
     let show = MenuItem::with_id(app, "show", "Show", true, None::<&str>).unwrap();
     let hide = MenuItem::with_id(app, "hide", "Hide", true, None::<&str>).unwrap();
+    let reset_pos = MenuItem::with_id(app, "reset-position", "Reset Position", true, None::<&str>).unwrap();
     let preferences = MenuItem::with_id(app, "preferences", "Preferences...", true, Some("cmd+,")).unwrap();
     let separator = PredefinedMenuItem::separator(app).unwrap();
     let quit = PredefinedMenuItem::quit(app, Some("Quit Spacebar")).unwrap();
 
     items.push(Box::new(show));
     items.push(Box::new(hide));
+    items.push(Box::new(reset_pos));
     items.push(Box::new(preferences));
     items.push(Box::new(separator));
     items.push(Box::new(quit));
@@ -90,6 +92,7 @@ pub fn run() {
             commands::get_version,
             commands::toggle_split_view,
             commands::is_split_view,
+            commands::is_on_fullscreen_space,
             commands::restore_after_split_view,
         ])
         .setup(move |app| {
@@ -126,11 +129,12 @@ pub fn run() {
             // Build tray menu
             let show = MenuItem::with_id(app, "show", "Show", true, None::<&str>)?;
             let hide = MenuItem::with_id(app, "hide", "Hide", true, None::<&str>)?;
+            let reset_pos = MenuItem::with_id(app, "reset-position", "Reset Position", true, None::<&str>)?;
             let preferences = MenuItem::with_id(app, "preferences", "Preferences...", true, Some("cmd+,"))?;
             let separator = PredefinedMenuItem::separator(app)?;
             let quit = PredefinedMenuItem::quit(app, Some("Quit Spacebar"))?;
 
-            let menu = Menu::with_items(app, &[&show, &hide, &preferences, &separator, &quit])?;
+            let menu = Menu::with_items(app, &[&show, &hide, &reset_pos, &preferences, &separator, &quit])?;
 
             let store_for_tray = store.clone();
             TrayIconBuilder::with_id("main")
@@ -152,8 +156,22 @@ pub fn run() {
                             let _ = w.hide();
                         }
                     }
+                    "reset-position" => {
+                        if let Some(w) = app.get_webview_window("main") {
+                            let _ = w.set_position(tauri::PhysicalPosition::new(100, 100));
+                            let _ = w.show();
+                            let _ = w.set_focus();
+                            // Persist reset position
+                            let mut cfg = load_config();
+                            cfg.position.x = 100.0;
+                            cfg.position.y = 100.0;
+                            cfg.snap.snapped_edge = None;
+                            config::save_config(&cfg);
+                            let _ = app.emit("config-changed", &cfg);
+                        }
+                    }
                     "preferences" => {
-                        let _ = app.emit("open-preferences", ());
+                        commands::open_preferences(app.clone());
                     }
                     id if id.starts_with("group-") => {}
                     id => {
@@ -167,17 +185,10 @@ pub fn run() {
                         }
                     }
                 })
-                .on_tray_icon_event(move |tray, event| {
-                    if let tauri::tray::TrayIconEvent::Click { .. } = event {
-                        // Only show window if there are active agents
-                        let store = tray.app_handle().state::<Arc<SessionStore>>();
-                        if !store.all().is_empty() {
-                            if let Some(w) = tray.app_handle().get_webview_window("main") {
-                                let _ = w.show();
-                                let _ = w.set_focus();
-                            }
-                        }
-                    }
+                .on_tray_icon_event(move |_tray, _event| {
+                    // Menu opens automatically on click — no need to show/focus the main window here.
+                    // Doing so steals focus from the tray menu, causing it to dismiss instantly
+                    // (especially visible when the app is on a different screen).
                 })
                 .build(app)?;
 

@@ -27,11 +27,14 @@ listen<TooltipShowPayload>("tooltip:show", (event) => {
 
   tooltipRoot.style.display = "block";
 
-  const rect = tooltipRoot.getBoundingClientRect();
-  emit("tooltip:ready", {
-    generation,
-    width: Math.ceil(rect.width),
-    height: Math.ceil(rect.height),
+  // Wait for browser reflow before measuring
+  requestAnimationFrame(() => {
+    const rect = tooltipRoot.getBoundingClientRect();
+    emit("tooltip:ready", {
+      generation,
+      width: Math.ceil(rect.width),
+      height: Math.ceil(rect.height),
+    });
   });
 });
 

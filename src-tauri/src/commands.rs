@@ -151,14 +151,69 @@ pub fn is_split_view(app: AppHandle) -> Result<bool, String> {
 }
 
 #[tauri::command]
+pub fn is_on_fullscreen_space(app: AppHandle) -> Result<bool, String> {
+    let window = app
+        .get_webview_window("main")
+        .ok_or("Main window not found")?;
+    Ok(crate::split_view::is_on_fullscreen_space(&window))
+}
+
+#[tauri::command]
 pub fn restore_after_split_view(app: AppHandle) -> Result<(), String> {
     let window = app
         .get_webview_window("main")
         .ok_or("Main window not found")?;
-    window.set_resizable(false).map_err(|e| format!("{e}"))?;
     // Restore alwaysOnTop from config
     let cfg = crate::config::load_config();
     let _ = window.set_always_on_top(cfg.always_on_top);
     let _ = app.set_activation_policy(tauri::ActivationPolicy::Accessory);
+    // Re-apply split view config (resizable bit + tiling flags) so the window
+    // remains eligible for drag-to-tile after exiting split view.
+    crate::split_view::configure_for_split_view(&window);
     Ok(())
 }
+
+/// Open or focus the preferences window.
+/// Called directly from the tray menu handler so the window creation
+/// and NSApp activation happen in the same run-loop turn — this is
+/// what makes macOS actually bring the window to front for Accessory apps.
+pub fn open_preferences(app: AppHandle) {
+    // If already open, just activate & focus
+    if let Some(w) = app.get_webview_window("preferences") {
+        activate_app();
+        let _ = w.show();
+        let _ = w.set_focus();
+        return;
+    }
+
+    let window = tauri::WebviewWindowBuilder::new(
+        &app,
+        "preferences",
+        tauri::WebviewUrl::App("preferences.html".into()),
+    )
+    .title("Settings")
+    .inner_size(768.0, 576.0)
+    .resizable(true)
+    .center()
+    .min_inner_size(624.0, 432.0)
+    .focused(true)
+    .build();
+
+    if let Ok(w) = window {
+        activate_app();
+        let _ = w.set_focus();
+    }
+}
+
+#[cfg(target_os = "macos")]
+fn activate_app() {
+    unsafe {
+        use objc::{class, msg_send, sel, sel_impl};
+        let ns_app: *mut objc::runtime::Object =
+            msg_send![class!(NSApplication), sharedApplication];
+        let _: () = msg_send![ns_app, activateIgnoringOtherApps: true];
+    }
+}
+
+#[cfg(not(target_os = "macos"))]
+fn activate_app() {}

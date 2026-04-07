@@ -385,11 +385,16 @@ async function init(): Promise<void> {
     snapDebounce = window.setTimeout(async () => {
       snapDebounce = null;
 
-      // Auto-enter Split View when dragged to a fullscreen space
+      // Auto-enter Split View when dragged to a fullscreen space.
+      // Check actual NSWindow state (not cached) to avoid toggling out of
+      // a split view that macOS created via native drag-to-tile.
       if (!_isSplitView) {
         const onFullscreenSpace = await invoke<boolean>("is_on_fullscreen_space");
         if (onFullscreenSpace) {
-          await invoke("toggle_split_view");
+          const alreadyFullscreen = await invoke<boolean>("is_split_view");
+          if (!alreadyFullscreen) {
+            await invoke("toggle_split_view");
+          }
           return;
         }
       }

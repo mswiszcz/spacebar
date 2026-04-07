@@ -142,7 +142,7 @@ impl Default for Config {
                 background_color: "#1a1a2e".into(),
                 background_opacity: 0.8,
                 blur_radius: 20,
-                accent_color: "#E8825A".into(),
+                accent_color: "#39bd78".into(),
                 entity_gap: default_entity_gap(),
                 group_gap: default_group_gap(),
             },

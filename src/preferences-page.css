@@ -5,8 +5,8 @@
 }
 
 body {
-  --accent: #E8825A;
-  --accent-dim: rgba(232, 130, 90, 0.12);
+  --accent: #39bd78;
+  --accent-dim: rgba(57, 189, 120, 0.12);
   background: #0e1117;
   color: #c9d1d9;
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
@@ -341,7 +341,41 @@ body {
   border-color: #484f58;
 }
 
-/* ── State Slots ────────────────────────────────── */
+/* ── State Table ────────────────────────────────── */
+
+.state-table-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 8px 4px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  margin-bottom: 2px;
+}
+
+.state-th {
+  font-size: 10px;
+  color: #6e7681;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 500;
+}
+
+.state-th-label {
+  min-width: 80px;
+}
+
+.state-th-color {
+  width: 24px;
+  text-align: center;
+}
+
+.state-th-sound {
+  flex: 1;
+}
+
+.state-th-actions {
+  width: 26px;
+}
 
 .state-slot {
   display: flex;
@@ -349,17 +383,32 @@ body {
   gap: 8px;
   padding: 6px 8px;
   border-radius: 6px;
-  transition: opacity 0.15s;
-}
-
-.state-slot-muted {
-  opacity: 0.45;
 }
 
 .state-slot-label {
   min-width: 80px;
   font-size: 12px;
   color: #ccc;
+}
+
+.state-slot-sound {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  transition: opacity 0.15s;
+}
+
+.sound-muted {
+  opacity: 0.35;
+}
+
+.color-box-wrap {
+  position: relative;
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
 }
 
 .state-slot-color {
@@ -371,6 +420,33 @@ body {
   cursor: pointer;
   font-size: 0;
   caret-color: transparent;
+}
+
+.color-box-reset {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: #21262d;
+  color: #c9d1d9;
+  font-size: 8px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  z-index: 1;
+  transition: all 0.15s;
+}
+
+.color-box-reset:hover {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
 }
 
 .state-slot-source {

@@ -40,9 +40,8 @@ interface Tab {
 }
 
 const TABS: Tab[] = [
-  { id: "layout", label: "Layout", icon: "⊞" },
   { id: "appearance", label: "Appearance", icon: "◑" },
-  { id: "states", label: "States", icon: "◈" },
+  { id: "sound", label: "Sound", icon: "♫" },
   { id: "behavior", label: "Behavior", icon: "⚙" },
   { id: "about", label: "About", icon: "ⓘ" },
 ];
@@ -84,9 +83,8 @@ async function init(): Promise<void> {
         `).join("")}
       </nav>
       <main class="prefs-content">
-        ${renderLayoutPage(config)}
         ${renderAppearancePage(config)}
-        ${renderStatesPage(config)}
+        ${renderSoundPage(config)}
         ${renderBehaviorPage(config)}
         ${renderAboutPage(version)}
       </main>
@@ -101,7 +99,7 @@ async function init(): Promise<void> {
     pages.forEach(p => p.classList.toggle("active", p.dataset.page === id));
   }
   tabs.forEach(t => t.addEventListener("click", () => activateTab(t.dataset.tab!)));
-  activateTab("layout");
+  activateTab("appearance");
 
   // Save helper
   const save = async () => {
@@ -134,10 +132,12 @@ async function init(): Promise<void> {
   bindRangePx("#pref-entity-gap", (v) => { config.theme.entityGap = v; save(); });
   bindRangePx("#pref-group-gap", (v) => { config.theme.groupGap = v; save(); });
 
+  renderStateColors(config, save);
+
   bindCheckbox("#pref-sound-enabled", (v) => { config.soundEnabled = v; save(); });
   bindRange("#pref-sound-volume", (v) => { config.soundVolume = v / 100; save(); });
-  bindSelect("#pref-sound-pack", (v) => { config.soundPack = v; save(); renderStateSlots(config, save); });
-  renderStateSlots(config, save);
+  bindSelect("#pref-sound-pack", (v) => { config.soundPack = v; save(); renderStateSounds(config, save); });
+  renderStateSounds(config, save);
 
   bindCheckbox("#pref-always-on-top", async (v) => {
     config.alwaysOnTop = v;
@@ -177,12 +177,14 @@ async function init(): Promise<void> {
 
 // ── Page renderers ──────────────────────────────────
 
-function renderLayoutPage(config: Config): string {
+function renderAppearancePage(config: Config): string {
   return `
-    <div class="prefs-page" data-page="layout">
-      <div class="prefs-page-title">Layout</div>
+    <div class="prefs-page" data-page="appearance">
+      <div class="prefs-page-title">Appearance</div>
 
       <div class="prefs-section">
+        <div class="prefs-section-title">Layout</div>
+
         <div class="prefs-row">
           <div class="prefs-row-info">
             <span class="prefs-row-label">Orientation</span>
@@ -208,6 +210,43 @@ function renderLayoutPage(config: Config): string {
 
         <div class="prefs-row">
           <div class="prefs-row-info">
+            <span class="prefs-row-label">Entity Gap</span>
+            <span class="prefs-row-hint">Space between agents within a group</span>
+          </div>
+          <div class="prefs-range-wrap">
+            <input type="range" class="prefs-range" id="pref-entity-gap" min="0" max="24" value="${config.theme.entityGap ?? 8}">
+            <span class="prefs-range-value" id="pref-entity-gap-val">${config.theme.entityGap ?? 8}px</span>
+          </div>
+        </div>
+
+        <div class="prefs-row">
+          <div class="prefs-row-info">
+            <span class="prefs-row-label">Group Gap</span>
+            <span class="prefs-row-hint">Space between groups</span>
+          </div>
+          <div class="prefs-range-wrap">
+            <input type="range" class="prefs-range" id="pref-group-gap" min="0" max="32" value="${config.theme.groupGap ?? 12}">
+            <span class="prefs-range-value" id="pref-group-gap-val">${config.theme.groupGap ?? 12}px</span>
+          </div>
+        </div>
+
+        <div class="prefs-row">
+          <div class="prefs-row-info">
+            <span class="prefs-row-label">Split View Overflow</span>
+            <span class="prefs-row-hint">How to handle too many mascots in Split View</span>
+          </div>
+          <select class="prefs-select" id="pref-split-overflow">
+            <option value="scroll" ${(config.splitView?.overflowBehavior ?? "scroll") === "scroll" ? "selected" : ""}>Scroll</option>
+            <option value="shrink" ${config.splitView?.overflowBehavior === "shrink" ? "selected" : ""}>Auto-shrink</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="prefs-section">
+        <div class="prefs-section-title">Display</div>
+
+        <div class="prefs-row">
+          <div class="prefs-row-info">
             <span class="prefs-row-label">Show Labels</span>
             <span class="prefs-row-hint">Display agent name below avatar</span>
           </div>
@@ -220,17 +259,6 @@ function renderLayoutPage(config: Config): string {
             <span class="prefs-row-hint">Show status tooltip on hover</span>
           </div>
           ${toggleSwitch("pref-show-tooltips", config.showTooltips)}
-        </div>
-
-        <div class="prefs-row">
-          <div class="prefs-row-info">
-            <span class="prefs-row-label">Split View Overflow</span>
-            <span class="prefs-row-hint">How to handle too many mascots in Split View</span>
-          </div>
-          <select class="prefs-select" id="pref-split-overflow">
-            <option value="scroll" ${(config.splitView?.overflowBehavior ?? "scroll") === "scroll" ? "selected" : ""}>Scroll</option>
-            <option value="shrink" ${config.splitView?.overflowBehavior === "shrink" ? "selected" : ""}>Auto-shrink</option>
-          </select>
         </div>
 
         <div class="prefs-row">
@@ -254,16 +282,10 @@ function renderLayoutPage(config: Config): string {
           </select>
         </div>
       </div>
-    </div>
-  `;
-}
-
-function renderAppearancePage(config: Config): string {
-  return `
-    <div class="prefs-page" data-page="appearance">
-      <div class="prefs-page-title">Appearance</div>
 
       <div class="prefs-section">
+        <div class="prefs-section-title">Theme</div>
+
         <div class="prefs-row">
           <div class="prefs-row-info">
             <span class="prefs-row-label">Background Color</span>
@@ -298,39 +320,24 @@ function renderAppearancePage(config: Config): string {
           </div>
           <input type="text" data-coloris id="pref-accent-color" class="prefs-color" value="${config.theme.accentColor}" style="background:${config.theme.accentColor}">
         </div>
+      </div>
 
-        <div class="prefs-row">
-          <div class="prefs-row-info">
-            <span class="prefs-row-label">Entity Gap</span>
-            <span class="prefs-row-hint">Space between agents within a group</span>
-          </div>
-          <div class="prefs-range-wrap">
-            <input type="range" class="prefs-range" id="pref-entity-gap" min="0" max="24" value="${config.theme.entityGap ?? 8}">
-            <span class="prefs-range-value" id="pref-entity-gap-val">${config.theme.entityGap ?? 8}px</span>
-          </div>
-        </div>
-
-        <div class="prefs-row">
-          <div class="prefs-row-info">
-            <span class="prefs-row-label">Group Gap</span>
-            <span class="prefs-row-hint">Space between groups</span>
-          </div>
-          <div class="prefs-range-wrap">
-            <input type="range" class="prefs-range" id="pref-group-gap" min="0" max="32" value="${config.theme.groupGap ?? 12}">
-            <span class="prefs-range-value" id="pref-group-gap-val">${config.theme.groupGap ?? 12}px</span>
-          </div>
-        </div>
+      <div class="prefs-section">
+        <div class="prefs-section-title">State Colors</div>
+        <div class="state-colors" id="state-colors"></div>
       </div>
     </div>
   `;
 }
 
-function renderStatesPage(config: Config): string {
+function renderSoundPage(config: Config): string {
   return `
-    <div class="prefs-page" data-page="states">
-      <div class="prefs-page-title">States</div>
+    <div class="prefs-page" data-page="sound">
+      <div class="prefs-page-title">Sound</div>
 
       <div class="prefs-section">
+        <div class="prefs-section-title">General</div>
+
         <div class="prefs-row">
           <div class="prefs-row-info">
             <span class="prefs-row-label">Sound Effects</span>
@@ -371,8 +378,8 @@ function renderStatesPage(config: Config): string {
       </div>
 
       <div class="prefs-section">
-        <div class="prefs-section-title">Per-State Settings</div>
-        <div class="state-slots" id="state-slots"></div>
+        <div class="prefs-section-title">Per-State</div>
+        <div class="state-slots" id="state-sounds"></div>
       </div>
     </div>
   `;
@@ -384,6 +391,8 @@ function renderBehaviorPage(config: Config): string {
       <div class="prefs-page-title">Behavior</div>
 
       <div class="prefs-section">
+        <div class="prefs-section-title">Window</div>
+
         <div class="prefs-row">
           <div class="prefs-row-info">
             <span class="prefs-row-label">Always on Top</span>
@@ -519,37 +528,32 @@ function collectOtherStateColors(config: Config, excludeState: string): string[]
   return [...new Set(colors)];
 }
 
-function renderStateSlots(config: Config, save: () => Promise<void>): void {
+function renderStateColors(config: Config, save: () => Promise<void>): void {
   if (!config.states) config.states = {};
-  const container = document.getElementById("state-slots")!;
-  container.innerHTML = STATE_ENTRIES.map(({ key, label }) => {
+  const container = document.getElementById("state-colors")!;
+  container.innerHTML = `
+    <div class="state-table-head">
+      <span class="state-th state-th-label">State</span>
+      <span class="state-th state-th-color">Icon</span>
+      <span class="state-th state-th-color">Dot</span>
+    </div>` + STATE_ENTRIES.map(({ key, label }) => {
     const stateConf = config.states[key];
-    const isMuted = stateConf?.muted ?? false;
-    const hasOverride = !!stateConf?.soundOverride;
-    const hasSound = !!SOUND_MAP[key];
-    const source = hasOverride
-      ? stateConf!.soundOverride!.split("/").pop()
-      : hasSound ? "Pack default" : "";
     const iconColor = stateConf?.iconColor ?? "";
     const dotColor = stateConf?.dotColor ?? "";
     return `
-      <div class="state-slot${isMuted ? " state-slot-muted" : ""}" data-state="${key}">
+      <div class="state-slot" data-state="${key}">
         <span class="state-slot-label">${label}</span>
-        <input type="text" data-coloris class="state-slot-color" data-action="icon-color" data-state-key="${key}" value="${iconColor || DEFAULT_ICON_COLORS[key] || config.theme.accentColor}" title="Icon color" style="background:${iconColor || DEFAULT_ICON_COLORS[key] || config.theme.accentColor}">
-        ${iconColor ? `<button class="sound-slot-btn sound-slot-reset" data-action="reset-icon-color" title="Reset icon color">&#10005;</button>` : ""}
-        <input type="text" data-coloris class="state-slot-color" data-action="dot-color" data-state-key="${key}" value="${dotColor || DEFAULT_DOT_COLORS[key] || config.theme.accentColor}" title="Dot color" style="background:${dotColor || DEFAULT_DOT_COLORS[key] || config.theme.accentColor}">
-        ${dotColor ? `<button class="sound-slot-btn sound-slot-reset" data-action="reset-dot-color" title="Reset dot color">&#10005;</button>` : ""}
-        ${hasSound ? `
-          <span class="state-slot-source" title="${hasOverride ? stateConf!.soundOverride! : ""}">${source}</span>
-          <button class="sound-slot-btn" data-action="play" title="Preview"${isMuted ? " disabled" : ""}>&#9654;</button>
-          <button class="sound-slot-btn" data-action="pick" title="Choose file"${isMuted ? " disabled" : ""}>&#128194;</button>
-          ${hasOverride ? `<button class="sound-slot-btn sound-slot-reset" data-action="reset-sound" title="Reset to pack"${isMuted ? " disabled" : ""}>&#10005;</button>` : ""}
-          <button class="sound-slot-btn" data-action="mute" title="${isMuted ? "Unmute" : "Mute"}">${isMuted ? "&#128263;" : "&#128264;"}</button>
-        ` : ""}
+        <span class="color-box-wrap">
+          <input type="text" data-coloris class="state-slot-color" data-action="icon-color" data-state-key="${key}" value="${iconColor || DEFAULT_ICON_COLORS[key] || config.theme.accentColor}" title="Icon color" style="background:${iconColor || DEFAULT_ICON_COLORS[key] || config.theme.accentColor}">
+          ${iconColor ? `<button class="color-box-reset" data-action="reset-icon-color" title="Reset icon color">&#10005;</button>` : ""}
+        </span>
+        <span class="color-box-wrap">
+          <input type="text" data-coloris class="state-slot-color" data-action="dot-color" data-state-key="${key}" value="${dotColor || DEFAULT_DOT_COLORS[key] || config.theme.accentColor}" title="Dot color" style="background:${dotColor || DEFAULT_DOT_COLORS[key] || config.theme.accentColor}">
+          ${dotColor ? `<button class="color-box-reset" data-action="reset-dot-color" title="Reset dot color">&#10005;</button>` : ""}
+        </span>
       </div>`;
   }).join("");
 
-  // Configure per-state Coloris instances with palette-aware suggestions
   function updateSwatches(): void {
     for (const { key } of STATE_ENTRIES) {
       const otherColors = collectOtherStateColors(config, key);
@@ -560,14 +564,79 @@ function renderStateSlots(config: Config, save: () => Promise<void>): void {
   updateSwatches();
 
   container.onclick = async (e) => {
-    const target = e.target as HTMLElement;
-    const btn = target.closest("[data-action]") as HTMLElement | null;
+    const btn = (e.target as HTMLElement).closest("[data-action]") as HTMLElement | null;
     if (!btn) return;
     const slot = btn.closest(".state-slot") as HTMLElement;
     const state = slot.dataset.state!;
     const action = btn.dataset.action;
+    if (!config.states[state]) config.states[state] = {};
 
-    // Ensure state entry exists
+    if (action === "reset-icon-color") {
+      delete config.states[state].iconColor;
+      cleanupStateEntry(config, state);
+      await save();
+      renderStateColors(config, save);
+    } else if (action === "reset-dot-color") {
+      delete config.states[state].dotColor;
+      cleanupStateEntry(config, state);
+      await save();
+      renderStateColors(config, save);
+    }
+  };
+
+  container.querySelectorAll<HTMLInputElement>(".state-slot-color").forEach((input) => {
+    input.addEventListener("input", async () => {
+      input.style.background = input.value;
+      const slot = input.closest(".state-slot") as HTMLElement;
+      const state = slot.dataset.state!;
+      if (!config.states[state]) config.states[state] = {};
+      if (input.dataset.action === "icon-color") {
+        config.states[state].iconColor = input.value;
+      } else if (input.dataset.action === "dot-color") {
+        config.states[state].dotColor = input.value;
+      }
+      await save();
+      updateSwatches();
+    });
+    input.addEventListener("change", () => renderStateColors(config, save));
+  });
+}
+
+function renderStateSounds(config: Config, save: () => Promise<void>): void {
+  if (!config.states) config.states = {};
+  const container = document.getElementById("state-sounds")!;
+  const soundEntries = STATE_ENTRIES.filter(({ key }) => !!SOUND_MAP[key]);
+  container.innerHTML = `
+    <div class="state-table-head">
+      <span class="state-th state-th-label">State</span>
+      <span class="state-th state-th-sound">Source</span>
+      <span class="state-th state-th-actions"></span>
+    </div>` + soundEntries.map(({ key, label }) => {
+    const stateConf = config.states[key];
+    const isMuted = stateConf?.muted ?? false;
+    const hasOverride = !!stateConf?.soundOverride;
+    const source = hasOverride
+      ? stateConf!.soundOverride!.split("/").pop()
+      : "Pack default";
+    return `
+      <div class="state-slot" data-state="${key}">
+        <span class="state-slot-label">${label}</span>
+        <span class="state-slot-sound${isMuted ? " sound-muted" : ""}">
+          <span class="state-slot-source" title="${hasOverride ? stateConf!.soundOverride! : ""}">${source}</span>
+          <button class="sound-slot-btn" data-action="play" title="Preview"${isMuted ? " disabled" : ""}>&#9654;</button>
+          <button class="sound-slot-btn" data-action="pick" title="Choose file"${isMuted ? " disabled" : ""}>&#128194;</button>
+          ${hasOverride ? `<button class="sound-slot-btn sound-slot-reset" data-action="reset-sound" title="Reset to pack"${isMuted ? " disabled" : ""}>&#10005;</button>` : ""}
+        </span>
+        <button class="sound-slot-btn" data-action="mute" title="${isMuted ? "Unmute" : "Mute"}">${isMuted ? "&#128263;" : "&#128264;"}</button>
+      </div>`;
+  }).join("");
+
+  container.onclick = async (e) => {
+    const btn = (e.target as HTMLElement).closest("[data-action]") as HTMLElement | null;
+    if (!btn) return;
+    const slot = btn.closest(".state-slot") as HTMLElement;
+    const state = slot.dataset.state!;
+    const action = btn.dataset.action;
     if (!config.states[state]) config.states[state] = {};
 
     if (action === "mute") {
@@ -577,19 +646,7 @@ function renderStateSlots(config: Config, save: () => Promise<void>): void {
         cleanupStateEntry(config, state);
       }
       await save();
-      renderStateSlots(config, save);
-    } else if (action === "icon-color" || action === "dot-color") {
-      // Handled by input event below
-    } else if (action === "reset-icon-color") {
-      delete config.states[state].iconColor;
-      cleanupStateEntry(config, state);
-      await save();
-      renderStateSlots(config, save);
-    } else if (action === "reset-dot-color") {
-      delete config.states[state].dotColor;
-      cleanupStateEntry(config, state);
-      await save();
-      renderStateSlots(config, save);
+      renderStateSounds(config, save);
     } else if (action === "play") {
       const url = resolveSoundUrl(state, config.soundPack, config.states[state]?.soundOverride);
       if (url) {
@@ -602,34 +659,15 @@ function renderStateSlots(config: Config, save: () => Promise<void>): void {
       if (path) {
         config.states[state].soundOverride = path;
         await save();
-        renderStateSlots(config, save);
+        renderStateSounds(config, save);
       }
     } else if (action === "reset-sound") {
       delete config.states[state].soundOverride;
       cleanupStateEntry(config, state);
       await save();
-      renderStateSlots(config, save);
+      renderStateSounds(config, save);
     }
   };
-
-  // Color change handler — Coloris fires input/change on the bound text input
-  container.querySelectorAll<HTMLInputElement>(".state-slot-color").forEach((input) => {
-    input.addEventListener("input", async () => {
-      input.style.background = input.value;
-      const slot = input.closest(".state-slot") as HTMLElement;
-      const state = slot.dataset.state!;
-      if (!config.states[state]) config.states[state] = {};
-      const action = input.dataset.action;
-      if (action === "icon-color") {
-        config.states[state].iconColor = input.value;
-      } else if (action === "dot-color") {
-        config.states[state].dotColor = input.value;
-      }
-      await save();
-      updateSwatches();
-    });
-    input.addEventListener("change", () => renderStateSlots(config, save));
-  });
 }
 
 /** Remove empty state entries to keep config clean */
