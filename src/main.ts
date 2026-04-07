@@ -14,7 +14,10 @@ interface Config {
   showLabels: boolean;
   showTooltips: boolean;
   position: { x: number; y: number };
-  sound: { enabled: boolean; volume: number; pack: string; overrides: Record<string, string>; muted: string[] };
+  soundEnabled: boolean;
+  soundVolume: number;
+  soundPack: string;
+  states: Record<string, { color?: string; soundOverride?: string; muted?: boolean }>;
   theme: {
     backgroundColor: string;
     backgroundOpacity: number;
@@ -120,8 +123,14 @@ function applyConfig(config: Config): void {
   // Resize window to fit new layout (orientation, size, labels may change dimensions)
   resizeWindow();
 
-  // Update sound settings
-  updateSoundSettings(config.sound.enabled, config.sound.volume, config.sound.pack, config.sound.overrides, config.sound.muted ?? []);
+  // Build overrides and muted list from states for sound module
+  const soundOverrides: Record<string, string> = {};
+  const soundMuted: string[] = [];
+  for (const [state, cfg] of Object.entries(config.states ?? {})) {
+    if (cfg.soundOverride) soundOverrides[state] = cfg.soundOverride;
+    if (cfg.muted) soundMuted.push(state);
+  }
+  updateSoundSettings(config.soundEnabled, config.soundVolume, config.soundPack, soundOverrides, soundMuted);
 }
 
 let _snapConfig: { enabled: boolean; edgePadding: number; snappedEdge: string | null } | null = null;
@@ -233,15 +242,38 @@ async function init(): Promise<void> {
   // Load and apply initial config
   let config = await invoke<Config>("get_config");
   _snapConfig = config.snap;
+
+  // If already in fullscreen/split view at launch, force vertical
+  _isSplitView = await invoke<boolean>("is_split_view");
+  if (_isSplitView) {
+    _preSplitOrientation = config.orientation;
+    app.classList.add("split-view");
+    config.orientation = "vertical";
+  }
+
   applyConfig(config);
 
   await listen<Config>("config-changed", (event) => {
+    const userOrientation = event.payload.orientation;
     config = event.payload;
     _snapConfig = event.payload.snap;
-    // Fullscreen/split view must always stay vertical
+
+    // Keep pre-snap/pre-split backups in sync with user preference
+    if (_preSnapOrientation !== null) {
+      _preSnapOrientation = userOrientation;
+    }
+    if (_preSplitOrientation !== null) {
+      _preSplitOrientation = userOrientation;
+    }
+
+    // Reapply transient orientation overrides
     if (_isSplitView) {
       config.orientation = "vertical";
+    } else if (_preSnapOrientation !== null && _snapConfig?.snappedEdge) {
+      const edge = _snapConfig.snappedEdge;
+      config.orientation = (edge === "left" || edge === "right") ? "vertical" : "horizontal";
     }
+
     applyConfig(config);
   });
 
@@ -308,6 +340,10 @@ async function init(): Promise<void> {
       splitBtn.classList.remove("split-view-btn-visible");
     }, 1500);
   });
+
+  // Disable hover effects when window loses focus
+  window.addEventListener("blur", () => document.body.classList.add("window-blurred"));
+  window.addEventListener("focus", () => document.body.classList.remove("window-blurred"));
 
   // Enable dragging from anywhere on the window
   // Alt/Option + click on mascots also drags
@@ -391,7 +427,11 @@ async function init(): Promise<void> {
         }
       }
 
-      await invoke("save_config", { config });
+      // Save config with user's preferred orientation, not the transient snap override
+      const configToSave = _preSnapOrientation !== null
+        ? { ...config, orientation: _preSnapOrientation }
+        : config;
+      await invoke("save_config", { config: configToSave });
     }, 150);
   });
 

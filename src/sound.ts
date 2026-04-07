@@ -19,13 +19,20 @@ let muted: string[] = [];
 
 export async function initSound(): Promise<void> {
   const config = await invoke<{
-    sound?: { enabled?: boolean; volume?: number; pack?: string; overrides?: Record<string, string>; muted?: string[] };
+    soundEnabled?: boolean;
+    soundVolume?: number;
+    soundPack?: string;
+    states?: Record<string, { soundOverride?: string; muted?: boolean }>;
   }>("get_config");
-  enabled = config.sound?.enabled ?? true;
-  volume = config.sound?.volume ?? 0.5;
-  activePack = config.sound?.pack ?? "default";
-  overrides = config.sound?.overrides ?? {};
-  muted = config.sound?.muted ?? [];
+  enabled = config.soundEnabled ?? true;
+  volume = config.soundVolume ?? 0.5;
+  activePack = config.soundPack ?? "default";
+  overrides = {};
+  muted = [];
+  for (const [state, cfg] of Object.entries(config.states ?? {})) {
+    if (cfg.soundOverride) overrides[state] = cfg.soundOverride;
+    if (cfg.muted) muted.push(state);
+  }
 }
 
 export function updateSoundSettings(
