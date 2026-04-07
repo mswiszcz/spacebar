@@ -9,7 +9,10 @@ interface Config {
   showLabels: boolean;
   showTooltips: boolean;
   position: { x: number; y: number };
-  sound: { enabled: boolean; volume: number; pack: string; overrides: Record<string, string>; muted: string[] };
+  soundEnabled: boolean;
+  soundVolume: number;
+  soundPack: string;
+  states: Record<string, { color?: string; soundOverride?: string; muted?: boolean }>;
   theme: {
     backgroundColor: string;
     backgroundOpacity: number;
@@ -33,7 +36,7 @@ interface Tab {
 const TABS: Tab[] = [
   { id: "layout", label: "Layout", icon: "⊞" },
   { id: "appearance", label: "Appearance", icon: "◑" },
-  { id: "sound", label: "Sound", icon: "♪" },
+  { id: "states", label: "States", icon: "◈" },
   { id: "behavior", label: "Behavior", icon: "⚙" },
   { id: "about", label: "About", icon: "ⓘ" },
 ];
@@ -66,7 +69,7 @@ async function init(): Promise<void> {
       <main class="prefs-content">
         ${renderLayoutPage(config)}
         ${renderAppearancePage(config)}
-        ${renderSoundPage(config)}
+        ${renderStatesPage(config)}
         ${renderBehaviorPage(config)}
         ${renderAboutPage(version)}
       </main>
@@ -114,10 +117,10 @@ async function init(): Promise<void> {
   bindRangePx("#pref-entity-gap", (v) => { config.theme.entityGap = v; save(); });
   bindRangePx("#pref-group-gap", (v) => { config.theme.groupGap = v; save(); });
 
-  bindCheckbox("#pref-sound-enabled", (v) => { config.sound.enabled = v; save(); });
-  bindRange("#pref-sound-volume", (v) => { config.sound.volume = v / 100; save(); });
-  bindSelect("#pref-sound-pack", (v) => { config.sound.pack = v; save(); renderSoundSlots(config, save); });
-  renderSoundSlots(config, save);
+  bindCheckbox("#pref-sound-enabled", (v) => { config.soundEnabled = v; save(); });
+  bindRange("#pref-sound-volume", (v) => { config.soundVolume = v / 100; save(); });
+  bindSelect("#pref-sound-pack", (v) => { config.soundPack = v; save(); renderStateSlots(config, save); });
+  renderStateSlots(config, save);
 
   bindCheckbox("#pref-always-on-top", async (v) => {
     config.alwaysOnTop = v;
@@ -295,10 +298,10 @@ function renderAppearancePage(config: Config): string {
   `;
 }
 
-function renderSoundPage(config: Config): string {
+function renderStatesPage(config: Config): string {
   return `
-    <div class="prefs-page" data-page="sound">
-      <div class="prefs-page-title">Sound</div>
+    <div class="prefs-page" data-page="states">
+      <div class="prefs-page-title">States</div>
 
       <div class="prefs-section">
         <div class="prefs-row">
@@ -306,7 +309,7 @@ function renderSoundPage(config: Config): string {
             <span class="prefs-row-label">Sound Effects</span>
             <span class="prefs-row-hint">Play sounds on agent state changes</span>
           </div>
-          ${toggleSwitch("pref-sound-enabled", config.sound.enabled)}
+          ${toggleSwitch("pref-sound-enabled", config.soundEnabled)}
         </div>
 
         <div class="prefs-row">
@@ -314,8 +317,8 @@ function renderSoundPage(config: Config): string {
             <span class="prefs-row-label">Volume</span>
           </div>
           <div class="prefs-range-wrap">
-            <input type="range" class="prefs-range" id="pref-sound-volume" min="0" max="100" value="${Math.round(config.sound.volume * 100)}">
-            <span class="prefs-range-value" id="pref-sound-volume-val">${Math.round(config.sound.volume * 100)}%</span>
+            <input type="range" class="prefs-range" id="pref-sound-volume" min="0" max="100" value="${Math.round(config.soundVolume * 100)}">
+            <span class="prefs-range-value" id="pref-sound-volume-val">${Math.round(config.soundVolume * 100)}%</span>
           </div>
         </div>
 
@@ -324,25 +327,25 @@ function renderSoundPage(config: Config): string {
             <span class="prefs-row-label">Sound Pack</span>
           </div>
           <select class="prefs-select" id="pref-sound-pack">
-            <option value="default" ${config.sound.pack === "default" ? "selected" : ""}>Default</option>
-            <option value="retro" ${config.sound.pack === "retro" ? "selected" : ""}>Retro</option>
-            <option value="sci-fi" ${config.sound.pack === "sci-fi" ? "selected" : ""}>Sci-Fi Console</option>
-            <option value="zen" ${config.sound.pack === "zen" ? "selected" : ""}>Zen</option>
-            <option value="arcade" ${config.sound.pack === "arcade" ? "selected" : ""}>Arcade</option>
-            <option value="typewriter" ${config.sound.pack === "typewriter" ? "selected" : ""}>Typewriter</option>
-            <option value="bubble-pop" ${config.sound.pack === "bubble-pop" ? "selected" : ""}>Bubble Pop</option>
-            <option value="glitch" ${config.sound.pack === "glitch" ? "selected" : ""}>Glitch</option>
-            <option value="xylophone" ${config.sound.pack === "xylophone" ? "selected" : ""}>Xylophone</option>
-            <option value="synth-pad" ${config.sound.pack === "synth-pad" ? "selected" : ""}>Synth Pad</option>
-            <option value="ui-minimal" ${config.sound.pack === "ui-minimal" ? "selected" : ""}>UI Minimal</option>
-            <option value="nature" ${config.sound.pack === "nature" ? "selected" : ""}>Nature</option>
+            <option value="default" ${config.soundPack === "default" ? "selected" : ""}>Default</option>
+            <option value="retro" ${config.soundPack === "retro" ? "selected" : ""}>Retro</option>
+            <option value="sci-fi" ${config.soundPack === "sci-fi" ? "selected" : ""}>Sci-Fi Console</option>
+            <option value="zen" ${config.soundPack === "zen" ? "selected" : ""}>Zen</option>
+            <option value="arcade" ${config.soundPack === "arcade" ? "selected" : ""}>Arcade</option>
+            <option value="typewriter" ${config.soundPack === "typewriter" ? "selected" : ""}>Typewriter</option>
+            <option value="bubble-pop" ${config.soundPack === "bubble-pop" ? "selected" : ""}>Bubble Pop</option>
+            <option value="glitch" ${config.soundPack === "glitch" ? "selected" : ""}>Glitch</option>
+            <option value="xylophone" ${config.soundPack === "xylophone" ? "selected" : ""}>Xylophone</option>
+            <option value="synth-pad" ${config.soundPack === "synth-pad" ? "selected" : ""}>Synth Pad</option>
+            <option value="ui-minimal" ${config.soundPack === "ui-minimal" ? "selected" : ""}>UI Minimal</option>
+            <option value="nature" ${config.soundPack === "nature" ? "selected" : ""}>Nature</option>
           </select>
         </div>
       </div>
 
       <div class="prefs-section">
-        <div class="prefs-section-title">Per-State Overrides</div>
-        <div class="sound-slots" id="sound-slots"></div>
+        <div class="prefs-section-title">Per-State Settings</div>
+        <div class="state-slots" id="state-slots"></div>
       </div>
     </div>
   `;
@@ -412,16 +415,18 @@ function toggleSwitch(id: string, checked: boolean): string {
   `;
 }
 
-// ── Sound slots ─────────────────────────────────────
+// ── State slots ────────────────────────────────────
 
-const SOUND_STATES: { key: string; label: string }[] = [
-  { key: "entering", label: "Entering" },
-  { key: "exiting", label: "Exiting" },
+const STATE_ENTRIES: { key: string; label: string }[] = [
+  { key: "idle", label: "Idle" },
   { key: "thinking", label: "Thinking" },
   { key: "needs-input", label: "Input" },
   { key: "error", label: "Error" },
   { key: "compacting", label: "Compacting" },
   { key: "notification", label: "Notify" },
+  { key: "entering", label: "Entering" },
+  { key: "exiting", label: "Exiting" },
+  { key: "sleeping", label: "Sleeping" },
 ];
 
 const SOUND_MAP: Record<string, string> = {
@@ -434,31 +439,40 @@ const SOUND_MAP: Record<string, string> = {
   notification: "bell.wav",
 };
 
-function resolveSoundUrl(state: string, pack: string, overrides: Record<string, string>): string {
-  if (overrides[state]) return convertFileSrc(overrides[state]);
-  return `/sounds/${pack}/${SOUND_MAP[state]}`;
+function resolveSoundUrl(state: string, pack: string, soundOverride?: string): string | null {
+  if (soundOverride) return convertFileSrc(soundOverride);
+  const file = SOUND_MAP[state];
+  if (!file) return null;
+  return `/sounds/${pack}/${file}`;
 }
 
-function renderSoundSlots(config: Config, save: () => Promise<void>): void {
-  if (!config.sound.muted) config.sound.muted = [];
-  const container = document.getElementById("sound-slots")!;
-  container.innerHTML = SOUND_STATES.map(({ key, label }) => {
-    const isOverridden = !!config.sound.overrides[key];
-    const isMuted = config.sound.muted.includes(key);
-    const source = isOverridden
-      ? config.sound.overrides[key].split("/").pop()
-      : "Pack default";
+function renderStateSlots(config: Config, save: () => Promise<void>): void {
+  if (!config.states) config.states = {};
+  const container = document.getElementById("state-slots")!;
+  container.innerHTML = STATE_ENTRIES.map(({ key, label }) => {
+    const stateConf = config.states[key];
+    const isMuted = stateConf?.muted ?? false;
+    const hasOverride = !!stateConf?.soundOverride;
+    const hasSound = !!SOUND_MAP[key];
+    const source = hasOverride
+      ? stateConf!.soundOverride!.split("/").pop()
+      : hasSound ? "Pack default" : "";
+    const color = stateConf?.color ?? "";
     return `
-      <div class="sound-slot${isMuted ? " sound-slot-muted" : ""}" data-state="${key}">
-        <label class="sound-slot-mute-toggle">
-          <input type="checkbox" data-action="mute" ${isMuted ? "" : "checked"}>
-          <span class="sound-slot-mute-slider"></span>
-        </label>
-        <span class="sound-slot-label">${label}</span>
-        <span class="sound-slot-source" title="${isOverridden ? config.sound.overrides[key] : ""}">${source}</span>
-        <button class="sound-slot-btn" data-action="play" title="Preview"${isMuted ? " disabled" : ""}>&#9654;</button>
-        <button class="sound-slot-btn" data-action="pick" title="Choose file"${isMuted ? " disabled" : ""}>&#128194;</button>
-        ${isOverridden ? `<button class="sound-slot-btn sound-slot-reset" data-action="reset" title="Reset to pack"${isMuted ? " disabled" : ""}>&#10005;</button>` : ""}
+      <div class="state-slot${isMuted ? " state-slot-muted" : ""}" data-state="${key}">
+        <span class="state-slot-label">${label}</span>
+        <input type="color" class="state-slot-color" data-action="color" value="${color || config.theme.accentColor}" title="State color">
+        ${color ? `<button class="sound-slot-btn sound-slot-reset" data-action="reset-color" title="Reset color">&#10005;</button>` : ""}
+        ${hasSound ? `
+          <label class="sound-slot-mute-toggle">
+            <input type="checkbox" data-action="mute" ${isMuted ? "" : "checked"}>
+            <span class="sound-slot-mute-slider"></span>
+          </label>
+          <span class="state-slot-source" title="${hasOverride ? stateConf!.soundOverride! : ""}">${source}</span>
+          <button class="sound-slot-btn" data-action="play" title="Preview"${isMuted ? " disabled" : ""}>&#9654;</button>
+          <button class="sound-slot-btn" data-action="pick" title="Choose file"${isMuted ? " disabled" : ""}>&#128194;</button>
+          ${hasOverride ? `<button class="sound-slot-btn sound-slot-reset" data-action="reset-sound" title="Reset to pack"${isMuted ? " disabled" : ""}>&#10005;</button>` : ""}
+        ` : ""}
       </div>`;
   }).join("");
 
@@ -466,34 +480,66 @@ function renderSoundSlots(config: Config, save: () => Promise<void>): void {
     const target = e.target as HTMLElement;
     const btn = target.closest("[data-action]") as HTMLElement | null;
     if (!btn) return;
-    const slot = btn.closest(".sound-slot") as HTMLElement;
+    const slot = btn.closest(".state-slot") as HTMLElement;
     const state = slot.dataset.state!;
     const action = btn.dataset.action;
 
+    // Ensure state entry exists
+    if (!config.states[state]) config.states[state] = {};
+
     if (action === "mute") {
-      const idx = config.sound.muted.indexOf(state);
-      if (idx >= 0) config.sound.muted.splice(idx, 1);
-      else config.sound.muted.push(state);
+      config.states[state].muted = !config.states[state].muted;
       await save();
-      renderSoundSlots(config, save);
+      renderStateSlots(config, save);
+    } else if (action === "color") {
+      // Handled by input event below
+    } else if (action === "reset-color") {
+      delete config.states[state].color;
+      cleanupStateEntry(config, state);
+      await save();
+      renderStateSlots(config, save);
     } else if (action === "play") {
-      const url = resolveSoundUrl(state, config.sound.pack, config.sound.overrides);
-      const audio = new Audio(url);
-      audio.volume = config.sound.volume;
-      audio.play().catch(() => {});
+      const url = resolveSoundUrl(state, config.soundPack, config.states[state]?.soundOverride);
+      if (url) {
+        const audio = new Audio(url);
+        audio.volume = config.soundVolume;
+        audio.play().catch(() => {});
+      }
     } else if (action === "pick") {
       const path = await invoke<string | null>("pick_sound_file");
       if (path) {
-        config.sound.overrides[state] = path;
+        config.states[state].soundOverride = path;
         await save();
-        renderSoundSlots(config, save);
+        renderStateSlots(config, save);
       }
-    } else if (action === "reset") {
-      delete config.sound.overrides[state];
+    } else if (action === "reset-sound") {
+      delete config.states[state].soundOverride;
+      cleanupStateEntry(config, state);
       await save();
-      renderSoundSlots(config, save);
+      renderStateSlots(config, save);
     }
   };
+
+  // Color input change handler
+  container.querySelectorAll<HTMLInputElement>(".state-slot-color").forEach((input) => {
+    input.addEventListener("input", async () => {
+      const slot = input.closest(".state-slot") as HTMLElement;
+      const state = slot.dataset.state!;
+      if (!config.states[state]) config.states[state] = {};
+      config.states[state].color = input.value;
+      await save();
+    });
+    // Re-render on change (mouseup after picker closes) to show reset button
+    input.addEventListener("change", () => renderStateSlots(config, save));
+  });
+}
+
+/** Remove empty state entries to keep config clean */
+function cleanupStateEntry(config: Config, state: string): void {
+  const entry = config.states[state];
+  if (entry && !entry.color && !entry.soundOverride && !entry.muted) {
+    delete config.states[state];
+  }
 }
 
 // Called once during init() — container listener is not cleaned up on re-render
