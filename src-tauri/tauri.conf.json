@@ -1,6 +1,6 @@
 {
   "productName": "Spacebar",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "identifier": "com.spacebar.app",
   "build": {
     "frontendDist": "../dist",

@@ -4,7 +4,7 @@ set -euo pipefail
 # Spacebar Installer
 # Installs the Spacebar.app and spacebar CLI
 
-VERSION="${SPACEBAR_VERSION:-0.7.0}"
+VERSION="${SPACEBAR_VERSION:-0.8.0}"
 REPO="mswiszcz/spacebar"
 APP_NAME="Spacebar.app"
 CLI_NAME="spacebar"
