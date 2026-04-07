@@ -111,10 +111,14 @@ async fn remove(
                 let _ = state.app_handle.emit("group-updated", &group);
             }
             crate::rebuild_tray_menu(&state.app_handle, &state.store);
-            // Hide window when no agents remain
+            // Hide window when no agents remain (skip in fullscreen/split view)
             if state.store.all().is_empty() {
                 if let Some(w) = state.app_handle.get_webview_window("main") {
-                    let _ = w.hide();
+                    if crate::split_view::is_fullscreen(&w) {
+                        let _ = state.app_handle.emit("sessions-empty", ());
+                    } else {
+                        let _ = w.hide();
+                    }
                 }
             }
             Ok(Json(session))
@@ -133,10 +137,38 @@ pub async fn start_server(store: Arc<SessionStore>, app_handle: AppHandle) -> u1
         .route("/remove", post(remove))
         .with_state(state);
 
-    let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
-    let port = listener.local_addr().unwrap().port();
+    let config = crate::config::load_config();
+    let bind_addr = &config.bind;
 
-    // Write port file
+    let (listener, port) = match config.port {
+        Some(p) => {
+            // Try the persisted port first
+            match TcpListener::bind(format!("{bind_addr}:{p}")).await {
+                Ok(l) => (l, p),
+                Err(_) => {
+                    eprintln!("Warning: port {p} unavailable, falling back to random port");
+                    let l = TcpListener::bind(format!("{bind_addr}:0")).await.unwrap();
+                    let p = l.local_addr().unwrap().port();
+                    (l, p)
+                }
+            }
+        }
+        None => {
+            // First run — pick random port
+            let l = TcpListener::bind(format!("{bind_addr}:0")).await.unwrap();
+            let p = l.local_addr().unwrap().port();
+            (l, p)
+        }
+    };
+
+    // Persist port to config if it changed or was unset
+    if config.port != Some(port) {
+        let mut updated_config = crate::config::load_config();
+        updated_config.port = Some(port);
+        crate::config::save_config(&updated_config);
+    }
+
+    // Write port file for backward compatibility
     let port_file = dirs::home_dir().unwrap().join(".spacebar.port");
     std::fs::write(&port_file, port.to_string()).unwrap();
 
