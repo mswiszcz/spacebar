@@ -499,11 +499,11 @@ function renderStateSlots(config: Config, save: () => Promise<void>): void {
         <input type="text" data-coloris class="state-slot-color" data-action="dot-color" data-state-key="${key}" value="${dotColor || DEFAULT_DOT_COLORS[key] || config.theme.accentColor}" title="Dot color" style="background:${dotColor || DEFAULT_DOT_COLORS[key] || config.theme.accentColor}">
         ${dotColor ? `<button class="sound-slot-btn sound-slot-reset" data-action="reset-dot-color" title="Reset dot color">&#10005;</button>` : ""}
         ${hasSound ? `
-          <button class="sound-slot-btn" data-action="mute" title="${isMuted ? "Unmute" : "Mute"}">${isMuted ? "&#128263;" : "&#128264;"}</button>
           <span class="state-slot-source" title="${hasOverride ? stateConf!.soundOverride! : ""}">${source}</span>
           <button class="sound-slot-btn" data-action="play" title="Preview"${isMuted ? " disabled" : ""}>&#9654;</button>
           <button class="sound-slot-btn" data-action="pick" title="Choose file"${isMuted ? " disabled" : ""}>&#128194;</button>
           ${hasOverride ? `<button class="sound-slot-btn sound-slot-reset" data-action="reset-sound" title="Reset to pack"${isMuted ? " disabled" : ""}>&#10005;</button>` : ""}
+          <button class="sound-slot-btn" data-action="mute" title="${isMuted ? "Unmute" : "Mute"}">${isMuted ? "&#128263;" : "&#128264;"}</button>
         ` : ""}
       </div>`;
   }).join("");
