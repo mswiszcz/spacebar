@@ -39,12 +39,15 @@ export function hslToHex(h: number, s: number, l: number): string {
  * and analogous (+30deg, -30deg) variants. Deduplicate by hue proximity.
  * Returns up to 12 hex strings.
  */
+const HEX_RE = /^#[0-9a-fA-F]{6}$/;
+
 export function generateSuggestions(otherColors: string[]): string[] {
   if (otherColors.length === 0) return [];
 
   const suggestions: Array<{ hex: string; h: number }> = [];
 
   for (const hex of otherColors) {
+    if (!HEX_RE.test(hex)) continue;
     const [h, s, l] = hexToHsl(hex);
     // Keep saturation and lightness balanced for suggestions
     const sl = Math.max(s, 40);
