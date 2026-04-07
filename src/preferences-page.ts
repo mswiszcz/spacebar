@@ -29,6 +29,8 @@ interface Config {
   splitView: { overflowBehavior: string };
   displayModes: Record<string, string>;
   statusDotCorner: string;
+  bind: string;
+  port: number | null;
 }
 
 interface Tab {
@@ -150,6 +152,16 @@ async function init(): Promise<void> {
     if (!v) config.snap.snappedEdge = null;
     save();
   });
+
+  bindSelect("#pref-bind", (v) => { config.bind = v; save(); });
+  const portEl = document.querySelector<HTMLInputElement>("#pref-port");
+  if (portEl) {
+    portEl.addEventListener("change", () => {
+      const v = portEl.value.trim();
+      config.port = v ? Number(v) : null;
+      save();
+    });
+  }
 
   const snapPaddingEl = document.querySelector<HTMLInputElement>("#pref-snap-padding");
   if (snapPaddingEl) {
@@ -396,6 +408,35 @@ function renderBehaviorPage(config: Config): string {
           <div class="prefs-range-wrap">
             <input type="range" class="prefs-range" id="pref-snap-padding" min="0" max="32" value="${config.snap.edgePadding}">
             <span class="prefs-range-value" id="pref-snap-padding-val">${config.snap.edgePadding}px</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="prefs-section">
+        <div class="prefs-section-title">Server</div>
+
+        <div class="prefs-row">
+          <div class="prefs-row-info">
+            <span class="prefs-row-label">Port</span>
+            <span class="prefs-row-hint">HTTP server port (auto-assigned on first launch)</span>
+          </div>
+          <input type="number" class="prefs-input" id="pref-port" min="1024" max="65535" value="${config.port ?? ""}" placeholder="Auto">
+        </div>
+
+        <div class="prefs-row">
+          <div class="prefs-row-info">
+            <span class="prefs-row-label">Bind Address</span>
+            <span class="prefs-row-hint">Set to 0.0.0.0 to allow Docker containers to connect</span>
+          </div>
+          <select class="prefs-select" id="pref-bind">
+            <option value="127.0.0.1" ${(config.bind ?? "127.0.0.1") === "127.0.0.1" ? "selected" : ""}>127.0.0.1 (local only)</option>
+            <option value="0.0.0.0" ${config.bind === "0.0.0.0" ? "selected" : ""}>0.0.0.0 (all interfaces)</option>
+          </select>
+        </div>
+
+        <div class="prefs-row">
+          <div class="prefs-row-info">
+            <span class="prefs-row-hint">Changes take effect on next launch</span>
           </div>
         </div>
       </div>
