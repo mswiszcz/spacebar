@@ -1,6 +1,7 @@
 import { invoke, convertFileSrc } from "@tauri-apps/api/core";
 import { emit } from "@tauri-apps/api/event";
 import { hasIcon } from "./mascots/registry";
+import { DEFAULT_STATE_COLORS } from "./state-defaults";
 
 interface Config {
   orientation: string;
@@ -461,13 +462,10 @@ function renderStateSlots(config: Config, save: () => Promise<void>): void {
     return `
       <div class="state-slot${isMuted ? " state-slot-muted" : ""}" data-state="${key}">
         <span class="state-slot-label">${label}</span>
-        <input type="color" class="state-slot-color" data-action="color" value="${color || config.theme.accentColor}" title="State color">
+        <input type="color" class="state-slot-color" data-action="color" value="${color || DEFAULT_STATE_COLORS[key] || config.theme.accentColor}" title="State color">
         ${color ? `<button class="sound-slot-btn sound-slot-reset" data-action="reset-color" title="Reset color">&#10005;</button>` : ""}
         ${hasSound ? `
-          <label class="sound-slot-mute-toggle">
-            <input type="checkbox" data-action="mute" ${isMuted ? "" : "checked"}>
-            <span class="sound-slot-mute-slider"></span>
-          </label>
+          <button class="sound-slot-btn" data-action="mute" title="${isMuted ? "Unmute" : "Mute"}">${isMuted ? "&#128263;" : "&#128264;"}</button>
           <span class="state-slot-source" title="${hasOverride ? stateConf!.soundOverride! : ""}">${source}</span>
           <button class="sound-slot-btn" data-action="play" title="Preview"${isMuted ? " disabled" : ""}>&#9654;</button>
           <button class="sound-slot-btn" data-action="pick" title="Choose file"${isMuted ? " disabled" : ""}>&#128194;</button>

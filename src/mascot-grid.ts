@@ -4,6 +4,7 @@ import { MascotState } from "./mascots/types";
 import { invoke } from "@tauri-apps/api/core";
 import { playStateSound } from "./sound";
 import { showTooltip, hideTooltip } from "./tooltip";
+import { DEFAULT_STATE_COLORS } from "./state-defaults";
 
 const SLEEP_DELAY_MS = 30_000;
 const sleepTimers = new Map<string, number>();
@@ -226,7 +227,7 @@ function createMascotElement(session: Session): HTMLElement {
     const dot = document.createElement("div");
     dot.className = `status-dot dot-${statusDotCorner}`;
     dot.style.display = "block";
-    dot.style.background = statesConfig["idle"]?.color ?? accentColor;
+    dot.style.background = statesConfig["idle"]?.color ?? DEFAULT_STATE_COLORS["idle"] ?? accentColor;
 
     wrapper.appendChild(iconWrapper);
     wrapper.appendChild(dot);
@@ -302,7 +303,7 @@ function updateMascotElement(el: HTMLElement, session: Session): void {
     if (dot) {
       dot.className = `status-dot dot-${statusDotCorner}`;
       dot.style.display = "block";
-      dot.style.background = statesConfig[state]?.color ?? accentColor;
+      dot.style.background = statesConfig[state]?.color ?? DEFAULT_STATE_COLORS[state] ?? accentColor;
     }
   } else {
     const mascot = getMascot(session.agent);

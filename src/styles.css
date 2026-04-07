@@ -129,7 +129,6 @@ html, body {
   transform: none;
 }
 
-.window-blurred .icon-mode.state-idle:hover .icon-wrapper,
 .window-blurred .icon-mode.state-sleeping:hover .icon-wrapper {
   opacity: 0.5;
   filter: grayscale(1);
@@ -228,14 +227,12 @@ html, body {
   animation: iconBounce 1s infinite;
 }
 
-.icon-mode.state-idle .icon-wrapper,
 .icon-mode.state-sleeping .icon-wrapper {
   opacity: 0.5;
   filter: grayscale(1);
   transition: opacity 0.2s ease, filter 0.2s ease;
 }
 
-.icon-mode.state-idle:hover .icon-wrapper,
 .icon-mode.state-sleeping:hover .icon-wrapper {
   opacity: 1;
   filter: none;
