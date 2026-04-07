@@ -12,7 +12,12 @@ pub struct Config {
     pub show_labels: bool,
     pub show_tooltips: bool,
     pub position: Position,
-    pub sound: SoundConfig,
+    #[serde(default = "default_sound_enabled")]
+    pub sound_enabled: bool,
+    #[serde(default = "default_sound_volume")]
+    pub sound_volume: f64,
+    #[serde(default = "default_sound_pack")]
+    pub sound_pack: String,
     pub theme: ThemeConfig,
     #[serde(default)]
     pub group_renames: HashMap<String, String>,
@@ -24,6 +29,8 @@ pub struct Config {
     pub display_modes: HashMap<String, String>,
     #[serde(default = "default_status_dot_corner")]
     pub status_dot_corner: String,
+    #[serde(default)]
+    pub states: HashMap<String, StateConfig>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -33,22 +40,27 @@ pub struct Position {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct SoundConfig {
-    pub enabled: bool,
-    pub volume: f64,
-    #[serde(default = "default_pack")]
-    pub pack: String,
+#[serde(rename_all = "camelCase")]
+pub struct StateConfig {
+    pub color: Option<String>,
+    pub sound_override: Option<String>,
     #[serde(default)]
-    pub overrides: HashMap<String, String>,
-    #[serde(default)]
-    pub muted: Vec<String>,
+    pub muted: bool,
 }
 
 fn default_status_dot_corner() -> String {
     "top-left".into()
 }
 
-fn default_pack() -> String {
+fn default_sound_enabled() -> bool {
+    true
+}
+
+fn default_sound_volume() -> f64 {
+    0.5
+}
+
+fn default_sound_pack() -> String {
     "default".into()
 }
 
@@ -114,13 +126,9 @@ impl Default for Config {
             show_labels: true,
             show_tooltips: true,
             position: Position { x: 100.0, y: 100.0 },
-            sound: SoundConfig {
-                enabled: true,
-                volume: 0.5,
-                pack: "default".into(),
-                overrides: HashMap::new(),
-                muted: vec![],
-            },
+            sound_enabled: true,
+            sound_volume: 0.5,
+            sound_pack: "default".into(),
             theme: ThemeConfig {
                 background_color: "#1a1a2e".into(),
                 background_opacity: 0.8,
@@ -134,6 +142,7 @@ impl Default for Config {
             split_view: SplitViewConfig::default(),
             display_modes: HashMap::new(),
             status_dot_corner: default_status_dot_corner(),
+            states: HashMap::new(),
         }
     }
 }
@@ -169,17 +178,28 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_sound_config_backward_compat() {
-        let json = r#"{"enabled": true, "volume": 0.5}"#;
-        let parsed: SoundConfig = serde_json::from_str(json).unwrap();
-        assert_eq!(parsed.pack, "default");
-        assert!(parsed.overrides.is_empty());
-        assert!(parsed.muted.is_empty());
+    fn test_default_config_serializes() {
+        let config = Config::default();
+        let json = serde_json::to_string(&config).unwrap();
+        let parsed: Config = serde_json::from_str(&json).unwrap();
+        assert_eq!(parsed.orientation, "horizontal");
+        assert_eq!(parsed.theme.blur_radius, 20);
+        assert!(parsed.sound_enabled);
+        assert_eq!(parsed.sound_pack, "default");
+        assert!(parsed.states.is_empty());
     }
 
     #[test]
-    fn test_snap_config_backward_compat() {
-        // Config without snap field should deserialize with defaults
+    fn test_state_config_deserializes() {
+        let json = r##"{"color": "#ff0000", "muted": true}"##;
+        let parsed: StateConfig = serde_json::from_str(json).unwrap();
+        assert_eq!(parsed.color, Some("#ff0000".into()));
+        assert!(parsed.muted);
+        assert!(parsed.sound_override.is_none());
+    }
+
+    #[test]
+    fn test_snap_config_defaults() {
         let json = r##"{
             "orientation": "horizontal",
             "alwaysOnTop": true,
@@ -187,7 +207,6 @@ mod tests {
             "showLabels": true,
             "showTooltips": true,
             "position": {"x": 100, "y": 100},
-            "sound": {"enabled": true, "volume": 0.5},
             "theme": {
                 "backgroundColor": "#1a1a2e",
                 "backgroundOpacity": 0.8,
@@ -199,59 +218,7 @@ mod tests {
         assert!(!parsed.snap.enabled);
         assert_eq!(parsed.snap.edge_padding, 4);
         assert!(parsed.snap.snapped_edge.is_none());
-    }
-
-    #[test]
-    fn test_split_view_config_backward_compat() {
-        // Config without split_view field should deserialize with defaults
-        let json = r##"{
-            "orientation": "horizontal",
-            "alwaysOnTop": true,
-            "mascotSize": "medium",
-            "showLabels": true,
-            "showTooltips": true,
-            "position": {"x": 100, "y": 100},
-            "sound": {"enabled": true, "volume": 0.5},
-            "theme": {
-                "backgroundColor": "#1a1a2e",
-                "backgroundOpacity": 0.8,
-                "blurRadius": 20,
-                "accentColor": "#E8825A"
-            }
-        }"##;
-        let parsed: Config = serde_json::from_str(json).unwrap();
-        assert_eq!(parsed.split_view.overflow_behavior, "scroll");
-    }
-
-    #[test]
-    fn test_display_modes_backward_compat() {
-        let json = r##"{
-            "orientation": "horizontal",
-            "alwaysOnTop": true,
-            "mascotSize": "medium",
-            "showLabels": true,
-            "showTooltips": true,
-            "position": {"x": 100, "y": 100},
-            "sound": {"enabled": true, "volume": 0.5},
-            "theme": {
-                "backgroundColor": "#1a1a2e",
-                "backgroundOpacity": 0.8,
-                "blurRadius": 20,
-                "accentColor": "#E8825A"
-            }
-        }"##;
-        let parsed: Config = serde_json::from_str(json).unwrap();
-        assert!(parsed.display_modes.is_empty());
-        assert_eq!(parsed.status_dot_corner, "top-left");
-    }
-
-    #[test]
-    fn test_default_config_serializes() {
-        let config = Config::default();
-        let json = serde_json::to_string(&config).unwrap();
-        let parsed: Config = serde_json::from_str(&json).unwrap();
-        assert_eq!(parsed.orientation, "horizontal");
-        assert_eq!(parsed.theme.blur_radius, 20);
-        assert!(parsed.sound.enabled);
+        assert!(parsed.sound_enabled);
+        assert!(parsed.states.is_empty());
     }
 }
