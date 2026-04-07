@@ -229,6 +229,57 @@ Add these hooks to your `~/.claude/settings.json` to connect Claude Code to Spac
 }
 ```
 
+## Docker / Remote Containers
+
+You can connect Claude Code instances running inside Docker containers (e.g., n8n workflows) to a Spacebar instance on the host machine.
+
+### 1. Configure Spacebar for Docker access
+
+Open Spacebar preferences (Behavior tab → Server section) and set:
+- **Bind Address** to `0.0.0.0 (all interfaces)`
+- **Port** is auto-assigned on first launch — note the value
+
+Or edit `~/.spacebar/config.json` directly:
+
+```json
+{
+  "bind": "0.0.0.0",
+  "port": 52718
+}
+```
+
+Restart Spacebar after changing these settings.
+
+### 2. Build the CLI for Linux
+
+The container needs a Linux build of the `spacebar` CLI:
+
+```bash
+cd cli
+cross build --release --target x86_64-unknown-linux-gnu
+```
+
+### 3. Configure Docker Compose
+
+Mount the CLI binary and set the `SPACEBAR_HOST` environment variable:
+
+```yaml
+services:
+  your-service:
+    environment:
+      - SPACEBAR_HOST=host.docker.internal:52718
+    volumes:
+      - ./cli/target/x86_64-unknown-linux-gnu/release/spacebar:/usr/local/bin/spacebar:ro
+```
+
+Replace `52718` with your actual port from step 1.
+
+### 4. Set up Claude Code hooks inside the container
+
+The container's Claude Code needs the same hooks as a local installation (see [Claude Code Hooks Setup](#claude-code-hooks-setup) above). If you mount a shared `~/.claude/settings.json` into the container, the hooks are already in place.
+
+When `SPACEBAR_HOST` is set, the CLI connects directly to that address, skipping port file discovery and auto-launch (which don't work inside containers).
+
 ## Preferences
 
 Right-click the bar to open the preferences window.
