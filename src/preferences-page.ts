@@ -489,6 +489,10 @@ function renderStateSlots(config: Config, save: () => Promise<void>): void {
 
     if (action === "mute") {
       config.states[state].muted = !config.states[state].muted;
+      if (!config.states[state].muted) {
+        delete config.states[state].muted;
+        cleanupStateEntry(config, state);
+      }
       await save();
       renderStateSlots(config, save);
     } else if (action === "color") {
