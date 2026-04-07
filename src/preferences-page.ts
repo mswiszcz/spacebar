@@ -62,7 +62,7 @@ async function init(): Promise<void> {
     el: "[data-coloris]",
     theme: "default",
     themeMode: "dark",
-    wrap: true,
+    wrap: false,
     alpha: false,
     format: "hex",
     formatToggle: false,
@@ -256,7 +256,7 @@ function renderAppearancePage(config: Config): string {
           <div class="prefs-row-info">
             <span class="prefs-row-label">Background Color</span>
           </div>
-          <input type="text" data-coloris id="pref-bg-color" class="prefs-color" value="${config.theme.backgroundColor}">
+          <input type="text" data-coloris id="pref-bg-color" class="prefs-color" value="${config.theme.backgroundColor}" style="background:${config.theme.backgroundColor}">
         </div>
 
         <div class="prefs-row">
@@ -284,7 +284,7 @@ function renderAppearancePage(config: Config): string {
           <div class="prefs-row-info">
             <span class="prefs-row-label">Accent Color</span>
           </div>
-          <input type="text" data-coloris id="pref-accent-color" class="prefs-color" value="${config.theme.accentColor}">
+          <input type="text" data-coloris id="pref-accent-color" class="prefs-color" value="${config.theme.accentColor}" style="background:${config.theme.accentColor}">
         </div>
 
         <div class="prefs-row">
@@ -494,9 +494,9 @@ function renderStateSlots(config: Config, save: () => Promise<void>): void {
     return `
       <div class="state-slot${isMuted ? " state-slot-muted" : ""}" data-state="${key}">
         <span class="state-slot-label">${label}</span>
-        <input type="text" data-coloris class="state-slot-color" data-action="icon-color" data-state-key="${key}" value="${iconColor || DEFAULT_ICON_COLORS[key] || config.theme.accentColor}" title="Icon color">
+        <input type="text" data-coloris class="state-slot-color" data-action="icon-color" data-state-key="${key}" value="${iconColor || DEFAULT_ICON_COLORS[key] || config.theme.accentColor}" title="Icon color" style="background:${iconColor || DEFAULT_ICON_COLORS[key] || config.theme.accentColor}">
         ${iconColor ? `<button class="sound-slot-btn sound-slot-reset" data-action="reset-icon-color" title="Reset icon color">&#10005;</button>` : ""}
-        <input type="text" data-coloris class="state-slot-color" data-action="dot-color" data-state-key="${key}" value="${dotColor || DEFAULT_DOT_COLORS[key] || config.theme.accentColor}" title="Dot color">
+        <input type="text" data-coloris class="state-slot-color" data-action="dot-color" data-state-key="${key}" value="${dotColor || DEFAULT_DOT_COLORS[key] || config.theme.accentColor}" title="Dot color" style="background:${dotColor || DEFAULT_DOT_COLORS[key] || config.theme.accentColor}">
         ${dotColor ? `<button class="sound-slot-btn sound-slot-reset" data-action="reset-dot-color" title="Reset dot color">&#10005;</button>` : ""}
         ${hasSound ? `
           <button class="sound-slot-btn" data-action="mute" title="${isMuted ? "Unmute" : "Mute"}">${isMuted ? "&#128263;" : "&#128264;"}</button>
@@ -574,6 +574,7 @@ function renderStateSlots(config: Config, save: () => Promise<void>): void {
   // Color change handler — Coloris fires input/change on the bound text input
   container.querySelectorAll<HTMLInputElement>(".state-slot-color").forEach((input) => {
     input.addEventListener("input", async () => {
+      input.style.background = input.value;
       const slot = input.closest(".state-slot") as HTMLElement;
       const state = slot.dataset.state!;
       if (!config.states[state]) config.states[state] = {};
@@ -649,7 +650,13 @@ function bindCheckbox(selector: string, cb: (v: boolean) => void): void {
 }
 
 function bindColor(selector: string, cb: (v: string) => void): void {
-  document.querySelector(selector)?.addEventListener("input", (e) => cb((e.target as HTMLInputElement).value));
+  const el = document.querySelector<HTMLInputElement>(selector);
+  if (!el) return;
+  el.addEventListener("input", (e) => {
+    const input = e.target as HTMLInputElement;
+    input.style.background = input.value;
+    cb(input.value);
+  });
 }
 
 function bindRange(selector: string, cb: (v: number) => void): void {
