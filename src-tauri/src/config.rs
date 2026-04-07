@@ -31,6 +31,10 @@ pub struct Config {
     pub status_dot_corner: String,
     #[serde(default)]
     pub states: HashMap<String, StateConfig>,
+    #[serde(default = "default_bind")]
+    pub bind: String,
+    #[serde(default)]
+    pub port: Option<u16>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -51,6 +55,10 @@ pub struct StateConfig {
 
 fn default_status_dot_corner() -> String {
     "top-left".into()
+}
+
+fn default_bind() -> String {
+    "127.0.0.1".into()
 }
 
 fn default_sound_enabled() -> bool {
@@ -144,6 +152,8 @@ impl Default for Config {
             display_modes: HashMap::new(),
             status_dot_corner: default_status_dot_corner(),
             states: HashMap::new(),
+            bind: default_bind(),
+            port: None,
         }
     }
 }
@@ -222,5 +232,49 @@ mod tests {
         assert!(parsed.snap.snapped_edge.is_none());
         assert!(parsed.sound_enabled);
         assert!(parsed.states.is_empty());
+    }
+
+    #[test]
+    fn test_bind_and_port_defaults() {
+        let json = r##"{
+            "orientation": "horizontal",
+            "alwaysOnTop": true,
+            "mascotSize": "medium",
+            "showLabels": true,
+            "showTooltips": true,
+            "position": {"x": 100, "y": 100},
+            "theme": {
+                "backgroundColor": "#1a1a2e",
+                "backgroundOpacity": 0.8,
+                "blurRadius": 20,
+                "accentColor": "#E8825A"
+            }
+        }"##;
+        let parsed: Config = serde_json::from_str(json).unwrap();
+        assert_eq!(parsed.bind, "127.0.0.1");
+        assert_eq!(parsed.port, None);
+    }
+
+    #[test]
+    fn test_bind_and_port_explicit() {
+        let json = r##"{
+            "orientation": "horizontal",
+            "alwaysOnTop": true,
+            "mascotSize": "medium",
+            "showLabels": true,
+            "showTooltips": true,
+            "position": {"x": 100, "y": 100},
+            "theme": {
+                "backgroundColor": "#1a1a2e",
+                "backgroundOpacity": 0.8,
+                "blurRadius": 20,
+                "accentColor": "#E8825A"
+            },
+            "bind": "0.0.0.0",
+            "port": 9876
+        }"##;
+        let parsed: Config = serde_json::from_str(json).unwrap();
+        assert_eq!(parsed.bind, "0.0.0.0");
+        assert_eq!(parsed.port, Some(9876));
     }
 }
