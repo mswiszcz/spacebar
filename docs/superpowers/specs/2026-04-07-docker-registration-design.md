@@ -13,32 +13,55 @@ Claude Code instances spawned inside Docker containers (e.g., n8n workflows) can
 
 ## Solution
 
-Two environment-variable-driven changes that maintain full backward compatibility.
+Three changes that maintain full backward compatibility.
 
-### 1. Server: configurable bind address and port (`server.rs`)
+### 1. Server: stable port with configurable bind address (`server.rs`, `config.rs`)
 
-- `SPACEBAR_BIND` — IP address to bind to. Default: `127.0.0.1`. Set to `0.0.0.0` to accept connections from Docker containers.
-- `SPACEBAR_PORT` — Fixed port number. Default: `0` (random). Set to a fixed value (e.g., `9876`) so Docker Compose can hardcode it.
+**Port:** On first launch, Spacebar picks a random available port and persists it to config (`~/.spacebar/config.json` field `port`). On subsequent launches, it reuses that port. The user can change it in config at any time.
 
-The port file (`~/.spacebar.port`) is still written regardless, so local CLI usage is unaffected.
+**Bind address:** New config field `bind` in `~/.spacebar/config.json`. Default: `"127.0.0.1"`. Set to `"0.0.0.0"` to accept connections from Docker containers.
+
+The port file (`~/.spacebar.port`) is still written for backward compatibility with existing CLI installations.
 
 ### 2. CLI: configurable host (`cli/src/main.rs`)
 
-- `SPACEBAR_HOST` — Full `host:port` to connect to. When set, the CLI skips reading `~/.spacebar.port` and connects directly to `http://$SPACEBAR_HOST`. Auto-launch logic is also skipped (the container can't launch macOS apps).
+`SPACEBAR_HOST` env var — full `host:port` to connect to. When set, the CLI skips reading `~/.spacebar.port` and connects directly to `http://$SPACEBAR_HOST`. Auto-launch logic is also skipped (the container can't launch macOS apps).
 
 When `SPACEBAR_HOST` is not set, behavior is identical to today.
+
+### 3. Config changes (`config.rs`)
+
+Add two fields to `Config`:
+
+```rust
+#[serde(default = "default_bind")]
+pub bind: String,        // default: "127.0.0.1"
+
+#[serde(default)]
+pub port: Option<u16>,   // None = first run, will be randomized and saved
+```
+
+**First-run flow:**
+1. `port` is `None` in config
+2. Server binds to `bind:0` (random port)
+3. Server writes the assigned port back to config
+4. All subsequent launches use that port
+
+**Port conflict handling:** If the persisted port is unavailable, log a warning and fall back to a random port, then update config with the new port.
 
 ## Usage
 
 ### Host setup
 
-Launch Spacebar with:
+1. Launch Spacebar normally — it auto-picks and persists a port on first run
+2. To enable Docker access, set `bind` to `"0.0.0.0"` in `~/.spacebar/config.json`:
 
-```bash
-SPACEBAR_BIND=0.0.0.0 SPACEBAR_PORT=9876 open -a Spacebar
+```json
+{
+  "bind": "0.0.0.0",
+  "port": 52718
+}
 ```
-
-Or persist in Spacebar config so it applies automatically on launch.
 
 ### Docker Compose
 
@@ -46,8 +69,10 @@ Or persist in Spacebar config so it applies automatically on launch.
 services:
   n8n:
     environment:
-      - SPACEBAR_HOST=host.docker.internal:9876
+      - SPACEBAR_HOST=host.docker.internal:52718
 ```
+
+Where `52718` is whatever port Spacebar persisted in config (check `~/.spacebar/config.json`).
 
 The `spacebar` CLI binary must be available inside the container (mounted or installed). Claude Code hooks call it as usual — the only difference is the env var telling it where to connect.
 
@@ -55,9 +80,9 @@ The `spacebar` CLI binary must be available inside the container (mounted or ins
 
 ### In scope
 
-- `server.rs`: read `SPACEBAR_BIND` and `SPACEBAR_PORT` env vars, use them in `TcpListener::bind`
-- `cli/src/main.rs`: read `SPACEBAR_HOST` env var, use it as base URL, skip port file and auto-launch when set
-- Config persistence: add `bind` and `port` fields to `~/.spacebar/config.json` as fallbacks when env vars are not set. Env vars take precedence over config values.
+- `config.rs`: add `bind` and `port` fields to `Config` with defaults
+- `server.rs`: read bind/port from config, persist port on first run, handle port conflicts
+- `cli/src/main.rs`: read `SPACEBAR_HOST` env var, use as direct base URL, skip port file + auto-launch when set
 
 ### Out of scope
 
@@ -70,5 +95,6 @@ The `spacebar` CLI binary must be available inside the container (mounted or ins
 
 | File | Change |
 |---|---|
-| `src-tauri/src/server.rs` | Read `SPACEBAR_BIND` and `SPACEBAR_PORT`, pass to `TcpListener::bind` |
+| `src-tauri/src/config.rs` | Add `bind: String` and `port: Option<u16>` fields to `Config` |
+| `src-tauri/src/server.rs` | Use config bind/port, persist port on first run, fallback on conflict |
 | `cli/src/main.rs` | Read `SPACEBAR_HOST`, use as direct base URL when set, skip port file + auto-launch |
