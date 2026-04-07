@@ -11,11 +11,23 @@ const silentUpdates = new Set<string>();
 const lastKnownState = new Map<string, string>();
 let displayModes: Record<string, string> = {};
 let statusDotCorner = "top-left";
+let statesConfig: Record<string, { color?: string }> = {};
+let accentColor = "#E8825A";
 
-export function updateDisplayConfig(modes: Record<string, string>, corner: string): void {
-  const changed = JSON.stringify(displayModes) !== JSON.stringify(modes) || statusDotCorner !== corner;
+export function updateDisplayConfig(
+  modes: Record<string, string>,
+  corner: string,
+  states: Record<string, { color?: string }>,
+  accent: string,
+): void {
+  const changed = JSON.stringify(displayModes) !== JSON.stringify(modes)
+    || statusDotCorner !== corner
+    || JSON.stringify(statesConfig) !== JSON.stringify(states)
+    || accentColor !== accent;
   displayModes = modes;
   statusDotCorner = corner;
+  statesConfig = states;
+  accentColor = accent;
   if (changed) rebuildAllSessions();
 }
 
@@ -213,6 +225,8 @@ function createMascotElement(session: Session): HTMLElement {
 
     const dot = document.createElement("div");
     dot.className = `status-dot dot-${statusDotCorner}`;
+    dot.style.display = "block";
+    dot.style.background = statesConfig["idle"]?.color ?? accentColor;
 
     wrapper.appendChild(iconWrapper);
     wrapper.appendChild(dot);
@@ -287,10 +301,8 @@ function updateMascotElement(el: HTMLElement, session: Session): void {
     const dot = el.querySelector(".status-dot") as HTMLElement;
     if (dot) {
       dot.className = `status-dot dot-${statusDotCorner}`;
-      const dotStates = ["thinking", "needs-input", "error", "compacting", "notification"];
-      if (dotStates.includes(state)) {
-        dot.classList.add(`dot-${state}`);
-      }
+      dot.style.display = "block";
+      dot.style.background = statesConfig[state]?.color ?? accentColor;
     }
   } else {
     const mascot = getMascot(session.agent);

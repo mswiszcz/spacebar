@@ -118,7 +118,12 @@ function applyConfig(config: Config): void {
   }).catch(() => {});
 
   // Apply display mode config
-  updateDisplayConfig(config.displayModes ?? {}, config.statusDotCorner ?? "top-left");
+  updateDisplayConfig(
+    config.displayModes ?? {},
+    config.statusDotCorner ?? "top-left",
+    config.states ?? {},
+    config.theme.accentColor,
+  );
 
   // Resize window to fit new layout (orientation, size, labels may change dimensions)
   resizeWindow();

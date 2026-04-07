@@ -116,9 +116,23 @@ html, body {
   transform: scale(1.1);
 }
 
-
 .mascot-item:active {
   transform: scale(0.95);
+}
+
+/* Disable all hover effects when window is not focused */
+.window-blurred .mascot-item:hover {
+  transform: none;
+}
+
+.window-blurred .mascot-item:active {
+  transform: none;
+}
+
+.window-blurred .icon-mode.state-idle:hover .icon-wrapper,
+.window-blurred .icon-mode.state-sleeping:hover .icon-wrapper {
+  opacity: 0.5;
+  filter: grayscale(1);
 }
 
 .mascot-wrapper {
@@ -182,39 +196,20 @@ html, body {
 /* Status dot */
 .status-dot {
   position: absolute;
-  width: 6px;
-  height: 6px;
+  width: 9px;
+  height: 9px;
   border-radius: 50%;
-  border: 1.5px solid var(--bg-color, #1a1a2e);
-  display: none;
+  border: 2px solid var(--bg-color, #1a1a2e);
+  display: block;
   z-index: 1;
+  transition: background 0.2s ease;
 }
 
 /* Corner positions */
-.dot-top-left { top: -1px; left: -1px; }
-.dot-top-right { top: -1px; right: -1px; }
-.dot-bottom-left { bottom: -1px; left: -1px; }
-.dot-bottom-right { bottom: -1px; right: -1px; }
-
-/* State colors and visibility */
-.status-dot.dot-thinking,
-.status-dot.dot-compacting {
-  display: block;
-  background: #facc15;
-  animation: dotPulse 1.5s ease-in-out infinite;
-}
-
-.status-dot.dot-needs-input,
-.status-dot.dot-notification {
-  display: block;
-  background: #60a5fa;
-  animation: dotPulse 1s ease-in-out infinite;
-}
-
-.status-dot.dot-error {
-  display: block;
-  background: #ef4444;
-}
+.dot-top-left { top: -3px; left: -3px; }
+.dot-top-right { top: -3px; right: -3px; }
+.dot-bottom-left { bottom: -3px; left: -3px; }
+.dot-bottom-right { bottom: -3px; right: -3px; }
 
 /* Dot pulse animation */
 @keyframes dotPulse {
@@ -230,11 +225,20 @@ html, body {
 
 .icon-mode.state-needs-input .icon-wrapper,
 .icon-mode.state-notification .icon-wrapper {
-  animation: iconPulseScale 1s ease-in-out infinite;
+  animation: iconBounce 1s infinite;
 }
 
+.icon-mode.state-idle .icon-wrapper,
 .icon-mode.state-sleeping .icon-wrapper {
   opacity: 0.5;
+  filter: grayscale(1);
+  transition: opacity 0.2s ease, filter 0.2s ease;
+}
+
+.icon-mode.state-idle:hover .icon-wrapper,
+.icon-mode.state-sleeping:hover .icon-wrapper {
+  opacity: 1;
+  filter: none;
 }
 
 @keyframes iconPulseOpacity {
@@ -242,9 +246,15 @@ html, body {
   50% { opacity: 0.7; }
 }
 
-@keyframes iconPulseScale {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.05); }
+@keyframes iconBounce {
+  0%, 100% {
+    transform: translateY(-15%);
+    animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
+  }
+  50% {
+    transform: translateY(0);
+    animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+  }
 }
 
 /* Tooltip window body */
