@@ -331,6 +331,25 @@ spacebar/
 └── public/sounds/          # Sound effect assets
 ```
 
+## Releasing
+
+Releases are automated via GitHub Actions. To create a new release:
+
+```bash
+# Assess changes and determine version
+git log --oneline $(git describe --tags --abbrev=0)..HEAD
+
+# Trigger the release workflow
+gh workflow run release.yml -f version=X.Y.Z
+
+# Watch progress
+gh run watch
+```
+
+The workflow bumps version strings across the project, commits, tags, builds the Tauri app and CLI, packages a tarball, and publishes a GitHub release.
+
+Or use the `/release` command in Claude Code, which automates the version assessment and dispatch.
+
 ## Contributing
 
 Contributions are welcome! Here's how to get started:
