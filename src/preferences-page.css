@@ -310,15 +310,8 @@ body {
   cursor: pointer;
   overflow: hidden;
   flex-shrink: 0;
-}
-
-.prefs-color::-webkit-color-swatch-wrapper {
-  padding: 0;
-}
-
-.prefs-color::-webkit-color-swatch {
-  border: none;
-  border-radius: 4px;
+  font-size: 0;
+  caret-color: transparent;
 }
 
 .prefs-color:hover {
@@ -349,20 +342,12 @@ body {
 .state-slot-color {
   width: 24px;
   height: 24px;
-  border: none;
+  border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 4px;
   padding: 0;
   cursor: pointer;
-  background: none;
-}
-
-.state-slot-color::-webkit-color-swatch-wrapper {
-  padding: 0;
-}
-
-.state-slot-color::-webkit-color-swatch {
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 4px;
+  font-size: 0;
+  caret-color: transparent;
 }
 
 .state-slot-source {
@@ -437,4 +422,55 @@ body {
   font-size: 11px;
   color: #aaa;
   min-width: 80px;
+}
+
+/* ── Coloris overrides ─────────────────────────────── */
+
+.clr-picker {
+  background: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.clr-picker .clr-gradient {
+  border-radius: 4px;
+}
+
+.clr-picker .clr-hue,
+.clr-picker .clr-alpha {
+  border-radius: 2px;
+}
+
+.clr-picker input.clr-color {
+  background: #0e1117;
+  border: 1px solid #30363d;
+  color: #c9d1d9;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.clr-picker input.clr-color:focus {
+  border-color: var(--accent);
+}
+
+.clr-swatches button {
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.clr-swatches button:hover {
+  border-color: var(--accent);
+}
+
+.clr-swatches div::before {
+  content: "Suggested";
+  display: block;
+  font-size: 10px;
+  color: #6e7681;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
 }
