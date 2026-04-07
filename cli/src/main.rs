@@ -74,6 +74,10 @@ fn port_file_path() -> PathBuf {
         .join(".spacebar.port")
 }
 
+fn get_base_url_from_env() -> Option<String> {
+    std::env::var("SPACEBAR_HOST").ok().map(|host| format!("http://{host}"))
+}
+
 fn get_base_url() -> Option<String> {
     let port = fs::read_to_string(port_file_path()).ok()?;
     let port = port.trim();
@@ -141,9 +145,14 @@ fn main() {
             on_click,
             group,
         } => {
-            let base_url = match get_base_url() {
-                Some(url) if is_app_reachable(&url) => url,
-                _ => launch_and_wait(),
+            let base_url = if let Some(url) = get_base_url_from_env() {
+                // Docker/remote mode — skip auto-launch, connect directly
+                url
+            } else {
+                match get_base_url() {
+                    Some(url) if is_app_reachable(&url) => url,
+                    _ => launch_and_wait(),
+                }
             };
             let pwd = std::env::var("PWD").ok();
             let body = RegisterBody {
@@ -158,21 +167,21 @@ fn main() {
                 .map(|_| ())
         }
         Commands::Update { session_id, state, no_sound } => {
-            let base_url = get_base_url_or_exit();
+            let base_url = get_base_url_from_env().unwrap_or_else(|| get_base_url_or_exit());
             let body = UpdateBody { session_id, state, no_sound };
             ureq::post(format!("{base_url}/update"))
                 .send_json(&body)
                 .map(|_| ())
         }
         Commands::Remove { session_id } => {
-            let base_url = get_base_url_or_exit();
+            let base_url = get_base_url_from_env().unwrap_or_else(|| get_base_url_or_exit());
             let body = RemoveBody { session_id };
             ureq::post(format!("{base_url}/remove"))
                 .send_json(&body)
                 .map(|_| ())
         }
         Commands::Health => {
-            let base_url = get_base_url_or_exit();
+            let base_url = get_base_url_from_env().unwrap_or_else(|| get_base_url_or_exit());
             ureq::get(format!("{base_url}/health"))
                 .call()
                 .map(|_| ())
