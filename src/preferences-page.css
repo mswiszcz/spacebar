@@ -325,40 +325,50 @@ body {
   border-color: #484f58;
 }
 
-/* ── Sound Slots ────────────────────────────────── */
+/* ── State Slots ────────────────────────────────── */
 
-.sound-slots {
-  margin-top: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.sound-slot {
+.state-slot {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 12px;
+  padding: 6px 8px;
   border-radius: 6px;
-  background: rgba(255, 255, 255, 0.02);
-  transition: background 0.15s;
+  transition: opacity 0.15s;
 }
 
-.sound-slot:hover {
-  background: rgba(255, 255, 255, 0.04);
+.state-slot-muted {
+  opacity: 0.45;
 }
 
-.sound-slot-label {
-  width: 80px;
-  color: #c9d1d9;
+.state-slot-label {
+  min-width: 80px;
   font-size: 12px;
-  flex-shrink: 0;
+  color: #ccc;
 }
 
-.sound-slot-source {
+.state-slot-color {
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 4px;
+  padding: 0;
+  cursor: pointer;
+  background: none;
+}
+
+.state-slot-color::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.state-slot-color::-webkit-color-swatch {
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+}
+
+.state-slot-source {
   flex: 1;
-  color: #6e7681;
   font-size: 11px;
+  color: #888;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -440,18 +450,6 @@ body {
 .sound-slot-mute-toggle input:checked + .sound-slot-mute-slider::before {
   transform: translateX(12px);
   background: var(--accent);
-}
-
-.sound-slot-muted .sound-slot-label,
-.sound-slot-muted .sound-slot-source,
-.sound-slot-muted .sound-slot-btn {
-  opacity: 0.35;
-  pointer-events: none;
-}
-
-.sound-slot-muted .sound-slot-mute-toggle {
-  opacity: 1;
-  pointer-events: auto;
 }
 
 /* ── About page ─────────────────────────────────── */
