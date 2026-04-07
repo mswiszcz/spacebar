@@ -2,6 +2,9 @@ import { invoke, convertFileSrc } from "@tauri-apps/api/core";
 import { emit } from "@tauri-apps/api/event";
 import { hasIcon } from "./mascots/registry";
 import { DEFAULT_DOT_COLORS, DEFAULT_ICON_COLORS } from "./state-defaults";
+import { generateSuggestions } from "./color-utils";
+import "@melloware/coloris/dist/coloris.css";
+import Coloris from "@melloware/coloris";
 
 interface Config {
   orientation: string;
@@ -54,6 +57,17 @@ async function init(): Promise<void> {
   const config = await invoke<Config>("get_config");
   const version = await invoke<string>("get_version");
   applyAccent(config.theme.accentColor);
+  Coloris.init();
+  Coloris({
+    el: "[data-coloris]",
+    theme: "default",
+    themeMode: "dark",
+    wrap: true,
+    alpha: false,
+    format: "hex",
+    formatToggle: false,
+    swatches: [],
+  });
   const root = document.getElementById("prefs-root")!;
 
   root.innerHTML = `
@@ -242,7 +256,7 @@ function renderAppearancePage(config: Config): string {
           <div class="prefs-row-info">
             <span class="prefs-row-label">Background Color</span>
           </div>
-          <input type="color" class="prefs-color" id="pref-bg-color" value="${config.theme.backgroundColor}">
+          <input type="text" data-coloris id="pref-bg-color" class="prefs-color" value="${config.theme.backgroundColor}">
         </div>
 
         <div class="prefs-row">
@@ -270,7 +284,7 @@ function renderAppearancePage(config: Config): string {
           <div class="prefs-row-info">
             <span class="prefs-row-label">Accent Color</span>
           </div>
-          <input type="color" class="prefs-color" id="pref-accent-color" value="${config.theme.accentColor}">
+          <input type="text" data-coloris id="pref-accent-color" class="prefs-color" value="${config.theme.accentColor}">
         </div>
 
         <div class="prefs-row">
@@ -447,6 +461,23 @@ function resolveSoundUrl(state: string, pack: string, soundOverride?: string): s
   return `/sounds/${pack}/${file}`;
 }
 
+function collectOtherStateColors(config: Config, excludeState: string): string[] {
+  const colors: string[] = [];
+  for (const { key } of STATE_ENTRIES) {
+    if (key === excludeState) continue;
+    const sc = config.states[key];
+    if (sc?.iconColor) colors.push(sc.iconColor);
+    if (sc?.dotColor) colors.push(sc.dotColor);
+  }
+  // Include defaults for states without custom colors
+  for (const { key } of STATE_ENTRIES) {
+    if (key === excludeState) continue;
+    if (!config.states[key]?.iconColor && DEFAULT_ICON_COLORS[key]) colors.push(DEFAULT_ICON_COLORS[key]);
+    if (!config.states[key]?.dotColor && DEFAULT_DOT_COLORS[key]) colors.push(DEFAULT_DOT_COLORS[key]);
+  }
+  return [...new Set(colors)];
+}
+
 function renderStateSlots(config: Config, save: () => Promise<void>): void {
   if (!config.states) config.states = {};
   const container = document.getElementById("state-slots")!;
@@ -463,9 +494,9 @@ function renderStateSlots(config: Config, save: () => Promise<void>): void {
     return `
       <div class="state-slot${isMuted ? " state-slot-muted" : ""}" data-state="${key}">
         <span class="state-slot-label">${label}</span>
-        <input type="color" class="state-slot-color" data-action="icon-color" value="${iconColor || DEFAULT_ICON_COLORS[key] || config.theme.accentColor}" title="Icon color">
+        <input type="text" data-coloris class="state-slot-color" data-action="icon-color" data-state-key="${key}" value="${iconColor || DEFAULT_ICON_COLORS[key] || config.theme.accentColor}" title="Icon color">
         ${iconColor ? `<button class="sound-slot-btn sound-slot-reset" data-action="reset-icon-color" title="Reset icon color">&#10005;</button>` : ""}
-        <input type="color" class="state-slot-color" data-action="dot-color" value="${dotColor || DEFAULT_DOT_COLORS[key] || config.theme.accentColor}" title="Dot color">
+        <input type="text" data-coloris class="state-slot-color" data-action="dot-color" data-state-key="${key}" value="${dotColor || DEFAULT_DOT_COLORS[key] || config.theme.accentColor}" title="Dot color">
         ${dotColor ? `<button class="sound-slot-btn sound-slot-reset" data-action="reset-dot-color" title="Reset dot color">&#10005;</button>` : ""}
         ${hasSound ? `
           <button class="sound-slot-btn" data-action="mute" title="${isMuted ? "Unmute" : "Mute"}">${isMuted ? "&#128263;" : "&#128264;"}</button>
@@ -476,6 +507,16 @@ function renderStateSlots(config: Config, save: () => Promise<void>): void {
         ` : ""}
       </div>`;
   }).join("");
+
+  // Configure per-state Coloris instances with palette-aware suggestions
+  function updateSwatches(): void {
+    for (const { key } of STATE_ENTRIES) {
+      const otherColors = collectOtherStateColors(config, key);
+      const swatches = generateSuggestions(otherColors);
+      Coloris.setInstance(`[data-state-key="${key}"]`, { swatches });
+    }
+  }
+  updateSwatches();
 
   container.onclick = async (e) => {
     const target = e.target as HTMLElement;
@@ -530,7 +571,7 @@ function renderStateSlots(config: Config, save: () => Promise<void>): void {
     }
   };
 
-  // Color input change handler
+  // Color change handler — Coloris fires input/change on the bound text input
   container.querySelectorAll<HTMLInputElement>(".state-slot-color").forEach((input) => {
     input.addEventListener("input", async () => {
       const slot = input.closest(".state-slot") as HTMLElement;
@@ -543,8 +584,8 @@ function renderStateSlots(config: Config, save: () => Promise<void>): void {
         config.states[state].dotColor = input.value;
       }
       await save();
+      updateSwatches();
     });
-    // Re-render on change (mouseup after picker closes) to show reset button
     input.addEventListener("change", () => renderStateSlots(config, save));
   });
 }
