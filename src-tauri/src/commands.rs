@@ -125,13 +125,9 @@ pub fn toggle_split_view(app: AppHandle) -> Result<(), String> {
     let entering = !crate::split_view::is_fullscreen(&window);
 
     if entering {
-        window.set_resizable(true).map_err(|e| format!("{e}"))?;
         let _ = window.set_always_on_top(false);
         let _ = app.set_activation_policy(tauri::ActivationPolicy::Regular);
     }
-    // Note: on exit, resizable(false) and Accessory policy are set by the frontend
-    // after the fullscreen exit animation completes (via tauri://resize listener),
-    // because macOS requires the window to remain resizable during the transition.
 
     unsafe {
         use objc::{msg_send, sel, sel_impl};
@@ -167,8 +163,9 @@ pub fn restore_after_split_view(app: AppHandle) -> Result<(), String> {
     let cfg = crate::config::load_config();
     let _ = window.set_always_on_top(cfg.always_on_top);
     let _ = app.set_activation_policy(tauri::ActivationPolicy::Accessory);
-    // Re-apply split view config (resizable bit + tiling flags) so the window
-    // remains eligible for drag-to-tile after exiting split view.
+    // Re-apply tiling collection behaviors so the window remains eligible
+    // for drag-to-tile after exiting split view.  The window stays resizable
+    // at all times (resize-zone clicks are handled by the resize guard).
     crate::split_view::configure_for_split_view(&window);
     Ok(())
 }

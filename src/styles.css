@@ -27,6 +27,7 @@ html, body {
 .mascot-grid.vertical {
   flex-direction: column;
   align-items: stretch;
+  width: 100%;
 }
 
 /* Group containers */
@@ -58,6 +59,7 @@ html, body {
 .mascot-grid.vertical .mascot-group {
   padding-bottom: 16px;
   align-self: stretch;
+  width: 100%;
 }
 
 .mascot-group.anonymous .group-label {
@@ -74,6 +76,7 @@ html, body {
 .mascot-grid.vertical .group-mascots {
   flex-direction: column;
   margin-top: 8px;
+  align-items: center;
 }
 
 .group-rename-input {
@@ -300,9 +303,12 @@ body.tooltip-window {
 }
 
 .empty-state-icon {
-  width: 64px;
-  height: 64px;
+  width: 32px;
+  height: 32px;
   opacity: 0.15;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
 }
 
 /* ── Split View green button ─────────────────────── */

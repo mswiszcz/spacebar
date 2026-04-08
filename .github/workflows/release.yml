@@ -45,8 +45,10 @@ jobs:
         env:
           VERSION: ${{ inputs.version }}
         run: |
+          set -x
+
           # package.json
-          sed -i '' "s/\"version\": \"[0-9]*\.[0-9]*\.[0-9]*\"/\"version\": \"${VERSION}\"/" package.json
+          npm pkg set "version=${VERSION}"
 
           # src-tauri/Cargo.toml (only the [package] version, first occurrence)
           awk -v ver="${VERSION}" 'done != 1 && /^version = "[0-9]+\.[0-9]+\.[0-9]+"/ { print "version = \"" ver "\""; done=1; next } { print }' \
@@ -57,13 +59,17 @@ jobs:
             cli/Cargo.toml > cli/Cargo.toml.tmp && mv cli/Cargo.toml.tmp cli/Cargo.toml
 
           # src-tauri/tauri.conf.json
-          sed -i '' "s/\"version\": \"[0-9]*\.[0-9]*\.[0-9]*\"/\"version\": \"${VERSION}\"/" src-tauri/tauri.conf.json
+          jq --arg v "${VERSION}" '.version = $v' src-tauri/tauri.conf.json > src-tauri/tauri.conf.json.tmp \
+            && mv src-tauri/tauri.conf.json.tmp src-tauri/tauri.conf.json
 
           # install.sh
           sed -i '' "s/SPACEBAR_VERSION:-[0-9]*\.[0-9]*\.[0-9]*/SPACEBAR_VERSION:-${VERSION}/" install.sh
 
           # Update Cargo.lock
           cargo update --workspace
+
+          echo "=== Changes after bump ==="
+          git diff --stat
 
       - name: Commit and tag
         env:

@@ -2,6 +2,8 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 body {
@@ -14,6 +16,8 @@ body {
   line-height: 1.5;
   overflow: hidden;
   height: 100vh;
+  user-select: none;
+  cursor: default;
 }
 
 /* ── Layout ─────────────────────────────────────── */
@@ -267,6 +271,9 @@ body {
   font-size: 12px;
   width: 80px;
   text-align: right;
+  -webkit-user-select: text;
+  user-select: text;
+  cursor: text;
 }
 
 .prefs-input:hover {

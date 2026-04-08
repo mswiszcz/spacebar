@@ -111,8 +111,12 @@ pub fn run() {
             // Apply background blur (private macOS API, same as iTerm2)
             let _ = set_window_blur_radius(&window, cfg.theme.blur_radius);
 
-            // Configure window for Split View eligibility
+            // Configure window for Split View eligibility.
+            // Keeps resizable set so macOS native tiling works in Mission Control.
+            // The resize guard prevents resize-zone clicks from swallowing mascot events.
             split_view::configure_for_split_view(&window);
+            split_view::install_resize_guard(&window);
+            split_view::observe_space_changes(app.handle().clone());
             let _ = window.set_position(tauri::PhysicalPosition::new(
                 cfg.position.x as i32,
                 cfg.position.y as i32,

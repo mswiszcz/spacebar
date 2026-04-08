@@ -2,3 +2,5 @@ node_modules/
 target/
 dist/
 .superpowers/
+.claude/worktrees/
+.claude/settings.local.json

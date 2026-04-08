@@ -16,6 +16,7 @@ tokio = { version = "1", features = ["full"] }
 axum = "0.8"
 cocoa = "0.26"
 objc = "0.2"
+block = "0.1"
 core-graphics = "0.24"
 core-foundation = "0.10"
 dirs = "6"

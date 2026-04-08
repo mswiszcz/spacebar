@@ -3598,6 +3598,7 @@ name = "spacebar-app"
 version = "0.8.0"
 dependencies = [
  "axum",
+ "block",
  "cocoa",
  "core-foundation",
  "core-graphics 0.24.0",
