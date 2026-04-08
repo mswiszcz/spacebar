@@ -215,7 +215,8 @@ function renderSessionsInGroup(
 function createMascotElement(session: Session): HTMLElement {
   const wrapper = document.createElement("div");
   const isIcon = displayModes[session.agent] === "icon";
-  wrapper.className = `mascot-item state-idle${isIcon ? " icon-mode" : ""}`;
+  const state = session.state as MascotState;
+  wrapper.className = `mascot-item state-${state}${isIcon ? " icon-mode" : ""}`;
   wrapper.dataset.sessionId = session.sessionId;
 
   if (isIcon) {
@@ -226,13 +227,13 @@ function createMascotElement(session: Session): HTMLElement {
 
     const iconSvg = iconWrapper.querySelector("svg") as SVGElement;
     if (iconSvg) {
-      iconSvg.style.fill = statesConfig["idle"]?.iconColor ?? DEFAULT_ICON_COLORS["idle"] ?? accentColor;
+      iconSvg.style.fill = statesConfig[state]?.iconColor ?? DEFAULT_ICON_COLORS[state] ?? accentColor;
     }
 
     const dot = document.createElement("div");
     dot.className = `status-dot dot-${statusDotCorner}`;
     dot.style.display = "block";
-    dot.style.background = statesConfig["idle"]?.dotColor ?? DEFAULT_DOT_COLORS["idle"] ?? accentColor;
+    dot.style.background = statesConfig[state]?.dotColor ?? DEFAULT_DOT_COLORS[state] ?? accentColor;
 
     wrapper.appendChild(iconWrapper);
     wrapper.appendChild(dot);
@@ -240,7 +241,7 @@ function createMascotElement(session: Session): HTMLElement {
     const mascotWrapper = document.createElement("div");
     mascotWrapper.className = "mascot-wrapper";
     const mascot = getMascot(session.agent);
-    mascotWrapper.innerHTML = mascot.svg("idle" as MascotState);
+    mascotWrapper.innerHTML = mascot.svg(state);
     wrapper.appendChild(mascotWrapper);
   }
 

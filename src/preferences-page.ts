@@ -9,7 +9,7 @@ import Coloris from "@melloware/coloris";
 interface Config {
   orientation: string;
   alwaysOnTop: boolean;
-  mascotSize: string;
+  mascotSize: number;
   showLabels: boolean;
   showTooltips: boolean;
   position: { x: number; y: number };
@@ -109,7 +109,7 @@ async function init(): Promise<void> {
 
   // Bind controls
   bindSelect("#pref-orientation", (v) => { config.orientation = v; save(); });
-  bindSelect("#pref-mascot-size", (v) => { config.mascotSize = v; save(); });
+  bindRangePx("#pref-mascot-size", (v) => { config.mascotSize = v; save(); });
   bindCheckbox("#pref-show-labels", (v) => { config.showLabels = v; save(); });
   bindCheckbox("#pref-show-tooltips", (v) => { config.showTooltips = v; save(); });
   bindSelect("#pref-split-overflow", (v) => {
@@ -198,14 +198,13 @@ function renderAppearancePage(config: Config): string {
 
         <div class="prefs-row">
           <div class="prefs-row-info">
-            <span class="prefs-row-label">Mascot Size</span>
-            <span class="prefs-row-hint">Size of mascot avatars</span>
+            <span class="prefs-row-label">Entity Size</span>
+            <span class="prefs-row-hint">Size of entity avatars (16–96px)</span>
           </div>
-          <select class="prefs-select" id="pref-mascot-size">
-            <option value="small" ${config.mascotSize === "small" ? "selected" : ""}>Small</option>
-            <option value="medium" ${config.mascotSize === "medium" ? "selected" : ""}>Medium</option>
-            <option value="large" ${config.mascotSize === "large" ? "selected" : ""}>Large</option>
-          </select>
+          <div class="prefs-range-wrap">
+            <input type="range" class="prefs-range" id="pref-mascot-size" min="16" max="96" step="1" value="${config.mascotSize ?? 32}">
+            <span class="prefs-range-value" id="pref-mascot-size-val">${config.mascotSize ?? 32}px</span>
+          </div>
         </div>
 
         <div class="prefs-row">

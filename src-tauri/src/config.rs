@@ -8,7 +8,8 @@ use std::path::PathBuf;
 pub struct Config {
     pub orientation: String,
     pub always_on_top: bool,
-    pub mascot_size: String,
+    #[serde(default = "default_mascot_size")]
+    pub mascot_size: u32,
     pub show_labels: bool,
     pub show_tooltips: bool,
     pub position: Position,
@@ -59,6 +60,10 @@ fn default_status_dot_corner() -> String {
 
 fn default_bind() -> String {
     "127.0.0.1".into()
+}
+
+fn default_mascot_size() -> u32 {
+    32
 }
 
 fn default_sound_enabled() -> bool {
@@ -131,7 +136,7 @@ impl Default for Config {
         Self {
             orientation: "horizontal".into(),
             always_on_top: true,
-            mascot_size: "medium".into(),
+            mascot_size: default_mascot_size(),
             show_labels: true,
             show_tooltips: true,
             position: Position { x: 100.0, y: 100.0 },
@@ -215,7 +220,7 @@ mod tests {
         let json = r##"{
             "orientation": "horizontal",
             "alwaysOnTop": true,
-            "mascotSize": "medium",
+            "mascotSize": 32,
             "showLabels": true,
             "showTooltips": true,
             "position": {"x": 100, "y": 100},
@@ -239,7 +244,7 @@ mod tests {
         let json = r##"{
             "orientation": "horizontal",
             "alwaysOnTop": true,
-            "mascotSize": "medium",
+            "mascotSize": 32,
             "showLabels": true,
             "showTooltips": true,
             "position": {"x": 100, "y": 100},
@@ -260,7 +265,7 @@ mod tests {
         let json = r##"{
             "orientation": "horizontal",
             "alwaysOnTop": true,
-            "mascotSize": "medium",
+            "mascotSize": 32,
             "showLabels": true,
             "showTooltips": true,
             "position": {"x": 100, "y": 100},

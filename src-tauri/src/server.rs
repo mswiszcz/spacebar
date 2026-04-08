@@ -88,7 +88,11 @@ async fn update(
         Some(session) => {
             let event = SessionUpdateEvent { session: session.clone(), no_sound: req.no_sound };
             let _ = state.app_handle.emit("session-updated", &event);
-            crate::rebuild_tray_menu(&state.app_handle, &state.store);
+            // Update the item text in-place to avoid dismissing an open tray menu.
+            // Falls back to a full rebuild if the item doesn't exist yet.
+            if !crate::update_tray_item_text(&state.app_handle, &state.store, &req.session_id) {
+                crate::rebuild_tray_menu(&state.app_handle, &state.store);
+            }
             Ok(Json(session))
         }
         None => Err(StatusCode::NOT_FOUND),

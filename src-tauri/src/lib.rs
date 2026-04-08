@@ -10,11 +10,39 @@ mod split_view;
 use config::load_config;
 use state::SessionStore;
 use std::process::Command;
-use std::sync::Arc;
-use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
+use std::sync::{Arc, Mutex};
+use tauri::menu::{Menu, MenuItemKind, MenuItem, PredefinedMenuItem};
 use tauri::tray::TrayIconBuilder;
 use tauri::{AppHandle, Emitter, Manager};
 use blur::set_window_blur_radius;
+
+/// Holds a reference to the current tray menu so we can update items in-place
+/// without replacing the whole menu (which dismisses an open menu on macOS).
+pub struct TrayMenuState(pub Mutex<Option<Menu<tauri::Wry>>>);
+
+/// Update a single session's label in the tray menu without replacing it.
+/// Returns true if the item was found and updated in-place.
+pub fn update_tray_item_text(app: &AppHandle, store: &SessionStore, session_id: &str) -> bool {
+    let menu_state: tauri::State<TrayMenuState> = app.state();
+    let guard = menu_state.0.lock().unwrap();
+    let Some(menu) = guard.as_ref() else { return false };
+
+    if let Some(MenuItemKind::MenuItem(item)) = menu.get(session_id) {
+        if let Some(session) = store.get(session_id) {
+            // Determine if this session is in a named group (needs indent)
+            let group = store.get_group(&session.group_id);
+            let has_group_name = group.as_ref().and_then(|g| g.display_name.as_ref()).is_some();
+            let label = if has_group_name {
+                format!("  {} ({}) · {}", session.agent, session.session_id, session.state)
+            } else {
+                format!("{} ({}) · {}", session.agent, session.session_id, session.state)
+            };
+            let _ = item.set_text(label);
+            return true;
+        }
+    }
+    false
+}
 
 pub fn rebuild_tray_menu(app: &AppHandle, store: &SessionStore) {
     let groups = store.all_groups();
@@ -67,8 +95,12 @@ pub fn rebuild_tray_menu(app: &AppHandle, store: &SessionStore) {
     let menu = Menu::with_items(app, &refs).unwrap();
 
     if let Some(tray) = app.tray_by_id("main") {
-        let _ = tray.set_menu(Some(menu));
+        let _ = tray.set_menu(Some(menu.clone()));
     }
+
+    // Store the menu reference for future in-place updates
+    let menu_state: tauri::State<TrayMenuState> = app.state();
+    *menu_state.0.lock().unwrap() = Some(menu);
 }
 
 pub fn run() {
@@ -78,6 +110,7 @@ pub fn run() {
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_dialog::init())
         .manage(store.clone())
+        .manage(TrayMenuState(Mutex::new(None)))
         .invoke_handler(tauri::generate_handler![
             commands::execute_click,
             commands::get_config,
@@ -139,6 +172,10 @@ pub fn run() {
             let quit = PredefinedMenuItem::quit(app, Some("Quit Spacebar"))?;
 
             let menu = Menu::with_items(app, &[&show, &hide, &reset_pos, &preferences, &separator, &quit])?;
+
+            // Store the initial menu for in-place updates
+            let menu_state: tauri::State<TrayMenuState> = app.state();
+            *menu_state.0.lock().unwrap() = Some(menu.clone());
 
             let store_for_tray = store.clone();
             TrayIconBuilder::with_id("main")

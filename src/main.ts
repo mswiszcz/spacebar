@@ -10,7 +10,7 @@ import { initPreferences } from "./preferences";
 interface Config {
   orientation: string;
   alwaysOnTop: boolean;
-  mascotSize: string;
+  mascotSize: number;
   showLabels: boolean;
   showTooltips: boolean;
   position: { x: number; y: number };
@@ -105,9 +105,10 @@ function applyConfig(config: Config): void {
   root.style.setProperty("--entity-gap", (config.theme.entityGap ?? 8) + "px");
   root.style.setProperty("--group-gap", (config.theme.groupGap ?? 12) + "px");
 
-  // Apply size class (preserve other classes like split-view)
-  app.classList.remove("size-small", "size-medium", "size-large");
-  app.classList.add(`size-${config.mascotSize}`);
+  // Apply entity size as CSS custom properties
+  const entitySize = config.mascotSize ?? 32;
+  root.style.setProperty("--mascot-size", entitySize + "px");
+  root.style.setProperty("--icon-size", Math.round(entitySize * 0.75) + "px");
 
   // Apply label visibility
   app.classList.toggle("hide-labels", !config.showLabels);
@@ -152,14 +153,14 @@ async function resizeWindow(): Promise<void> {
     if (document.getElementById("app")?.classList.contains("split-view")) {
       const cfg = await invoke<Config>("get_config");
       if (cfg.splitView?.overflowBehavior === "shrink") {
-        const sizes = ["large", "medium", "small"] as const;
-        const appEl = document.getElementById("app")!;
+        const rootEl = document.documentElement;
         const containerHeight = window.innerHeight;
+        const startSize = cfg.mascotSize ?? 32;
 
         grid.classList.remove("overflow-scroll");
-        for (const size of sizes) {
-          appEl.classList.remove("size-small", "size-medium", "size-large");
-          appEl.classList.add(`size-${size}`);
+        for (let sz = startSize; sz >= 16; sz -= 4) {
+          rootEl.style.setProperty("--mascot-size", sz + "px");
+          rootEl.style.setProperty("--icon-size", Math.round(sz * 0.75) + "px");
           await new Promise(r => requestAnimationFrame(r));
           if (grid.scrollHeight <= containerHeight) break;
         }

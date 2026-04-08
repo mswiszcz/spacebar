@@ -31,7 +31,16 @@
       "WebFetch(domain:freesound.org)",
       "mcp__plugin_context7_context7__resolve-library-id",
       "Skill(update-config)",
-      "WebFetch(domain:docs.anthropic.com)"
+      "WebFetch(domain:docs.anthropic.com)",
+      "Bash(/Users/mswiszcz/.claude/plugins/cache/claude-plugins-official/superpowers/5.0.6/scripts/start-server.sh --project-dir /Users/mswiszcz/Labs/spacebar)",
+      "Bash(cargo update:*)",
+      "Bash(/Users/mswiszcz/.claude/plugins/cache/claude-plugins-official/superpowers/5.0.7/scripts/start-server.sh:*)",
+      "Bash(git worktree:*)",
+      "Bash(npm view:*)",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(f\\\\\"name: {d.get\\('name'\\)}\\\\nversion: {d.get\\('version'\\)}\\\\nlicense: {d.get\\('license'\\)}\\\\ndescription: {d.get\\('description'\\)}\\\\nhomepage: {d.get\\('homepage'\\)}\\\\nrepository: {d.get\\('repository',{}\\).get\\('url','N/A'\\)}\\\\\"\\)\")",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(json.dumps\\(d, indent=2\\)\\)\")",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(f\\\\\"name: {d.get\\('name'\\)}\\\\nversion: {d.get\\('version'\\)}\\\\nlicense: {d.get\\('license'\\)}\\\\ndescription: {d.get\\('description'\\)}\\\\\"\\)\")",
+      "Bash(gh run:*)"
     ]
   }
 }
