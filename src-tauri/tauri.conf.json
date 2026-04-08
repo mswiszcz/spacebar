@@ -43,7 +43,9 @@
       "csp": null,
       "assetProtocol": {
         "enable": true,
-        "scope": ["**"]
+        "scope": [
+          "**"
+        ]
       }
     },
     "macOSPrivateApi": true
@@ -51,7 +53,9 @@
   "bundle": {
     "active": true,
     "targets": "all",
-    "resources": ["../public/sounds/**/*"]
+    "resources": [
+      "../public/sounds/**/*"
+    ]
   },
   "plugins": {
     "shell": {
