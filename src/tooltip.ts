@@ -125,6 +125,7 @@ async function doShowTooltip(
     agent: session.agent,
     state: session.state,
     registeredAt: session.registeredAt,
+    pid: session.pid,
   });
 }
 
