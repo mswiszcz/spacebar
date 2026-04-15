@@ -58,6 +58,13 @@ export function initMascotGrid(container: HTMLElement): void {
   grid.className = "mascot-grid";
   container.appendChild(grid);
 
+  grid.addEventListener("contextmenu", (e) => {
+    const target = e.target as HTMLElement;
+    if (target.closest(".mascot-item, .group-label")) return;
+    e.preventDefault();
+    invoke("show_grid_menu");
+  });
+
   sessionState.subscribe(() => renderGroups(grid));
   sessionState.subscribeGroups(() => renderGroups(grid));
 }
@@ -254,6 +261,12 @@ function createMascotElement(session: Session): HTMLElement {
   if (session.state === "idle") {
     startSleepTimer(wrapper, session);
   }
+
+  wrapper.addEventListener("contextmenu", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    invoke("show_entity_menu", { sessionId: session.sessionId });
+  });
 
   wrapper.addEventListener("click", () => {
     invoke("execute_click", { sessionId: session.sessionId });
