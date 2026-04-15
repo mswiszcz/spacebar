@@ -3588,6 +3588,7 @@ version = "0.8.0"
 dependencies = [
  "clap",
  "dirs",
+ "libc",
  "serde",
  "serde_json",
  "ureq",
@@ -3603,6 +3604,7 @@ dependencies = [
  "core-foundation",
  "core-graphics 0.24.0",
  "dirs",
+ "libc",
  "objc",
  "serde",
  "serde_json",

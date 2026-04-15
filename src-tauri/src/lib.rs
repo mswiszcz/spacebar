@@ -3,6 +3,7 @@
 mod blur;
 mod commands;
 mod config;
+mod liveness;
 mod server;
 mod state;
 mod split_view;
