@@ -24,6 +24,7 @@ pub struct RegisterRequest {
     pub on_click: Option<String>,
     pub pwd: Option<String>,
     pub display_name: Option<String>,
+    pub pid: Option<u32>,
 }
 
 #[derive(Deserialize)]
@@ -64,6 +65,7 @@ async fn register(
         req.on_click,
         req.pwd,
         req.display_name,
+        req.pid,
         &config.group_renames,
     );
     // Show the main window when an agent registers
