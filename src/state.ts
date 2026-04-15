@@ -6,6 +6,7 @@ export interface Session {
   registeredAt: number;
   pwd: string | null;
   groupId: string;
+  pid?: number;
 }
 
 export interface Group {
