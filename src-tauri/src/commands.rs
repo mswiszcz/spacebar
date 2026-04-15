@@ -214,3 +214,34 @@ fn activate_app() {
 
 #[cfg(not(target_os = "macos"))]
 fn activate_app() {}
+
+/// Remove a session from the store and emit the same events the HTTP
+/// `/remove` handler does. Used by the HTTP handler, the right-click
+/// "Remove" menu, and Refresh.
+pub fn remove_session(
+    app: &AppHandle,
+    store: &SessionStore,
+    session_id: &str,
+) -> Option<crate::state::Session> {
+    let (session, group, group_empty) = store.remove(session_id)?;
+    let _ = app.emit("session-removed", &session);
+    if group_empty {
+        let _ = app.emit(
+            "group-removed",
+            &serde_json::json!({"groupId": group.group_id}),
+        );
+    } else {
+        let _ = app.emit("group-updated", &group);
+    }
+    crate::rebuild_tray_menu(app, store);
+    if store.all().is_empty() {
+        if let Some(w) = app.get_webview_window("main") {
+            if crate::split_view::is_fullscreen(&w) {
+                let _ = app.emit("sessions-empty", ());
+            } else {
+                let _ = w.hide();
+            }
+        }
+    }
+    Some(session)
+}
