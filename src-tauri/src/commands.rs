@@ -2,6 +2,7 @@ use crate::config::{self, Config};
 use crate::state::SessionStore;
 use std::process::Command;
 use std::sync::Arc;
+use tauri::menu::{ContextMenu, Menu, MenuItem};
 use tauri::{AppHandle, Emitter, Manager, State};
 use tauri_plugin_dialog::DialogExt;
 
@@ -244,4 +245,60 @@ pub fn remove_session(
         }
     }
     Some(session)
+}
+
+#[tauri::command]
+pub fn show_entity_menu(
+    session_id: String,
+    app: AppHandle,
+) -> Result<(), String> {
+    let id = format!("entity-remove:{session_id}");
+    let remove = MenuItem::with_id(&app, &id, "Remove", true, None::<&str>)
+        .map_err(|e| e.to_string())?;
+    let menu = Menu::with_items(&app, &[&remove]).map_err(|e| e.to_string())?;
+    let window = app.get_webview_window("main").ok_or("no main window")?;
+    menu.popup(window.as_ref().window().clone()).map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+pub fn show_grid_menu(app: AppHandle) -> Result<(), String> {
+    let refresh = MenuItem::with_id(&app, "grid-refresh", "Refresh", true, None::<&str>)
+        .map_err(|e| e.to_string())?;
+    let menu = Menu::with_items(&app, &[&refresh]).map_err(|e| e.to_string())?;
+    let window = app.get_webview_window("main").ok_or("no main window")?;
+    menu.popup(window.as_ref().window().clone()).map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+/// Body of `refresh_sessions`, also called from the popup menu event handler.
+pub fn refresh_sessions_inner(app: &AppHandle, store: &SessionStore) {
+    let dead: Vec<String> = store
+        .all()
+        .into_iter()
+        .filter(|s| s.pid.map_or(false, |p| !crate::liveness::is_alive(p)))
+        .map(|s| s.session_id)
+        .collect();
+
+    if dead.is_empty() {
+        return;
+    }
+
+    // Tell the frontend which IDs are about to swipe out, BEFORE we mutate
+    // state or fire the per-session events. Frontend marks them as
+    // "refresh-pending" so the standard session-removed handler skips its
+    // per-entity exit animation and lets the swipe-out CSS class drive removal.
+    let _ = app.emit("sessions-refresh-removed", &dead);
+
+    for sid in &dead {
+        remove_session(app, store, sid);
+    }
+}
+
+#[tauri::command]
+pub fn refresh_sessions(
+    app: AppHandle,
+    store: tauri::State<'_, std::sync::Arc<SessionStore>>,
+) {
+    refresh_sessions_inner(&app, store.as_ref());
 }

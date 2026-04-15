@@ -128,6 +128,9 @@ pub fn run() {
             commands::is_split_view,
             commands::is_on_fullscreen_space,
             commands::restore_after_split_view,
+            commands::show_entity_menu,
+            commands::show_grid_menu,
+            commands::refresh_sessions,
         ])
         .setup(move |app| {
             // Hide from Dock — tray-only app
@@ -233,6 +236,18 @@ pub fn run() {
                     // (especially visible when the app is on a different screen).
                 })
                 .build(app)?;
+
+            // Route popup-menu clicks (entity Remove, grid Refresh).
+            // Tray menu clicks are handled by the tray's own on_menu_event above.
+            let store_for_menu = store.clone();
+            app.on_menu_event(move |app, event| {
+                let id = event.id().as_ref().to_string();
+                if let Some(session_id) = id.strip_prefix("entity-remove:") {
+                    commands::remove_session(app, store_for_menu.as_ref(), session_id);
+                } else if id == "grid-refresh" {
+                    commands::refresh_sessions_inner(app, store_for_menu.as_ref());
+                }
+            });
 
             // Start HTTP server
             let handle = app.handle().clone();
