@@ -125,7 +125,6 @@ pub fn run() {
             commands::get_version,
             commands::toggle_split_view,
             commands::is_split_view,
-            commands::is_on_fullscreen_space,
             commands::restore_after_split_view,
         ])
         .setup(move |app| {
@@ -149,7 +148,6 @@ pub fn run() {
             // The resize guard prevents resize-zone clicks from swallowing mascot events.
             split_view::configure_for_split_view(&window);
             split_view::install_resize_guard(&window);
-            split_view::observe_space_changes(app.handle().clone());
             let _ = window.set_position(tauri::PhysicalPosition::new(
                 cfg.position.x as i32,
                 cfg.position.y as i32,

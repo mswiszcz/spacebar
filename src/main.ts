@@ -373,7 +373,7 @@ async function init(): Promise<void> {
     }
   });
 
-  // Save window position on move, with snap detection and fullscreen space detection
+  // Save window position on move, with snap detection
   let snapDebounce: number | null = null;
   await listen("tauri://move", async () => {
     if (_isSnapping) return;
@@ -385,20 +385,6 @@ async function init(): Promise<void> {
     if (snapDebounce !== null) clearTimeout(snapDebounce);
     snapDebounce = window.setTimeout(async () => {
       snapDebounce = null;
-
-      // Auto-enter Split View when dragged to a fullscreen space.
-      // Check actual NSWindow state (not cached) to avoid toggling out of
-      // a split view that macOS created via native drag-to-tile.
-      if (!_isSplitView) {
-        const onFullscreenSpace = await invoke<boolean>("is_on_fullscreen_space");
-        if (onFullscreenSpace) {
-          const alreadyFullscreen = await invoke<boolean>("is_split_view");
-          if (!alreadyFullscreen) {
-            await invoke("toggle_split_view");
-          }
-          return;
-        }
-      }
 
       if (!config.snap.enabled) return;
 

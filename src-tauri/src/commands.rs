@@ -147,14 +147,6 @@ pub fn is_split_view(app: AppHandle) -> Result<bool, String> {
 }
 
 #[tauri::command]
-pub fn is_on_fullscreen_space(app: AppHandle) -> Result<bool, String> {
-    let window = app
-        .get_webview_window("main")
-        .ok_or("Main window not found")?;
-    Ok(crate::split_view::is_on_fullscreen_space(&window))
-}
-
-#[tauri::command]
 pub fn restore_after_split_view(app: AppHandle) -> Result<(), String> {
     let window = app
         .get_webview_window("main")

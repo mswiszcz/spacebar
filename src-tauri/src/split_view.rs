@@ -1,9 +1,8 @@
 #![allow(deprecated, unexpected_cfgs)]
 
 use cocoa::base::id;
-use cocoa::foundation::{NSString, NSUInteger};
+use cocoa::foundation::NSUInteger;
 use objc::{msg_send, sel, sel_impl};
-use tauri::Manager;
 
 // NSWindowCollectionBehavior flags
 const NS_WINDOW_COLLECTION_BEHAVIOR_FULL_SCREEN_PRIMARY: NSUInteger = 1 << 7;
@@ -106,94 +105,11 @@ pub fn install_resize_guard(window: &tauri::WebviewWindow) {
     }
 }
 
-/// Listen for macOS space changes and auto-enter fullscreen when the window
-/// is placed on a fullscreen space (e.g. via Mission Control drag).
-pub fn observe_space_changes(app: tauri::AppHandle) {
-    use objc::runtime::Class;
-    use std::sync::OnceLock;
-
-    static APP: OnceLock<tauri::AppHandle> = OnceLock::new();
-    let _ = APP.set(app);
-
-    unsafe {
-        // Create a one-off ObjC class to receive the notification.
-        let superclass = Class::get("NSObject").unwrap();
-        if Class::get("SpacebarSpaceObserver").is_none() {
-            let mut decl =
-                objc::declare::ClassDecl::new("SpacebarSpaceObserver", superclass).unwrap();
-
-            extern "C" fn space_changed(
-                _this: &objc::runtime::Object,
-                _sel: objc::runtime::Sel,
-                _note: id,
-            ) {
-                let Some(app) = APP.get() else { return };
-                let Some(window) = app.get_webview_window("main") else {
-                    return;
-                };
-                if is_fullscreen(&window) {
-                    return; // already in fullscreen
-                }
-                if !is_on_fullscreen_space(&window) {
-                    return; // not on a fullscreen space
-                }
-                // Enter fullscreen — same logic as toggle_split_view
-                let _ = window.set_always_on_top(false);
-                let _ = app.set_activation_policy(tauri::ActivationPolicy::Regular);
-                unsafe {
-                    let ns_window = window.ns_window().unwrap() as id;
-                    let _: () = msg_send![ns_window, toggleFullScreen: cocoa::base::nil];
-                }
-            }
-
-            decl.add_method(
-                sel!(spaceChanged:),
-                space_changed as extern "C" fn(&objc::runtime::Object, objc::runtime::Sel, id),
-            );
-            decl.register();
-        }
-
-        let cls = Class::get("SpacebarSpaceObserver").unwrap();
-        let observer: id = msg_send![cls, new];
-
-        let workspace: id = msg_send![Class::get("NSWorkspace").unwrap(), sharedWorkspace];
-        let nc: id = msg_send![workspace, notificationCenter];
-        let name: id = cocoa::foundation::NSString::alloc(cocoa::base::nil)
-            .init_str("NSWorkspaceActiveSpaceDidChangeNotification");
-        let _: () = msg_send![nc,
-            addObserver: observer
-            selector: sel!(spaceChanged:)
-            name: name
-            object: cocoa::base::nil
-        ];
-        // Observer lives for the app lifetime — intentionally not removed.
-        let _ = observer;
-    }
-}
-
 /// Check if the main window is currently in fullscreen (Split View).
 pub fn is_fullscreen(window: &tauri::WebviewWindow) -> bool {
     unsafe {
         let ns_window = window.ns_window().unwrap() as id;
         let mask: NSUInteger = msg_send![ns_window, styleMask];
         mask & NS_WINDOW_STYLE_MASK_FULL_SCREEN != 0
-    }
-}
-
-/// Check if the window is on a fullscreen space (menu bar hidden).
-/// On macOS, fullscreen spaces hide the menu bar, so frame ≈ visibleFrame.
-pub fn is_on_fullscreen_space(window: &tauri::WebviewWindow) -> bool {
-    unsafe {
-        let ns_window = window.ns_window().unwrap() as id;
-        let screen: id = msg_send![ns_window, screen];
-        if screen == cocoa::base::nil {
-            return false;
-        }
-        let frame: cocoa::foundation::NSRect = msg_send![screen, frame];
-        let visible: cocoa::foundation::NSRect = msg_send![screen, visibleFrame];
-        // Menu bar is ~24px; on fullscreen spaces it's hidden (difference < 5px)
-        let menu_bar = (frame.size.height - visible.size.height)
-            - (visible.origin.y - frame.origin.y);
-        menu_bar.abs() < 5.0
     }
 }
