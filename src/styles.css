@@ -378,3 +378,19 @@ body.tooltip-window {
   border-radius: 2px;
 }
 
+@keyframes swipe-out-left {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(-40px);
+    opacity: 0;
+  }
+}
+
+.mascot-item.swipe-out {
+  animation: swipe-out-left 400ms ease-in forwards;
+  pointer-events: none;
+}
+

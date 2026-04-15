@@ -6,12 +6,13 @@ interface TooltipShowPayload {
   agent: string;
   state: string;
   registeredAt: number;
+  pid?: number;
 }
 
 const tooltipRoot = document.getElementById("tooltip-root")!;
 
 listen<TooltipShowPayload>("tooltip:show", (event) => {
-  const { generation, sessionId, agent, state, registeredAt } = event.payload;
+  const { generation, sessionId, agent, state, registeredAt, pid } = event.payload;
 
   const uptime = Math.floor((Date.now() / 1000 - registeredAt) / 60);
   const uptimeText = uptime < 1 ? "<1m" : `${uptime}m`;
@@ -19,6 +20,7 @@ listen<TooltipShowPayload>("tooltip:show", (event) => {
   tooltipRoot.innerHTML = `
     <div class="tooltip">
       <div class="tooltip-row"><span class="tooltip-label">Session</span> ${sessionId.slice(0, 8)}...</div>
+      <div class="tooltip-row"><span class="tooltip-label">PID</span> ${pid ?? "—"}</div>
       <div class="tooltip-row"><span class="tooltip-label">Agent</span> ${agent}</div>
       <div class="tooltip-row"><span class="tooltip-label">State</span> ${state}</div>
       <div class="tooltip-row"><span class="tooltip-label">Uptime</span> ${uptimeText}</div>

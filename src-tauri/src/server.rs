@@ -24,6 +24,7 @@ pub struct RegisterRequest {
     pub on_click: Option<String>,
     pub pwd: Option<String>,
     pub display_name: Option<String>,
+    pub pid: Option<u32>,
 }
 
 #[derive(Deserialize)]
@@ -64,6 +65,7 @@ async fn register(
         req.on_click,
         req.pwd,
         req.display_name,
+        req.pid,
         &config.group_renames,
     );
     // Show the main window when an agent registers
@@ -103,30 +105,8 @@ async fn remove(
     AxumState(state): AxumState<AppState>,
     Json(req): Json<RemoveRequest>,
 ) -> Result<Json<Session>, StatusCode> {
-    match state.store.remove(&req.session_id) {
-        Some((session, group, group_empty)) => {
-            let _ = state.app_handle.emit("session-removed", &session);
-            if group_empty {
-                let _ = state.app_handle.emit(
-                    "group-removed",
-                    &serde_json::json!({"groupId": group.group_id}),
-                );
-            } else {
-                let _ = state.app_handle.emit("group-updated", &group);
-            }
-            crate::rebuild_tray_menu(&state.app_handle, &state.store);
-            // Hide window when no agents remain (skip in fullscreen/split view)
-            if state.store.all().is_empty() {
-                if let Some(w) = state.app_handle.get_webview_window("main") {
-                    if crate::split_view::is_fullscreen(&w) {
-                        let _ = state.app_handle.emit("sessions-empty", ());
-                    } else {
-                        let _ = w.hide();
-                    }
-                }
-            }
-            Ok(Json(session))
-        }
+    match crate::commands::remove_session(&state.app_handle, &state.store, &req.session_id) {
+        Some(session) => Ok(Json(session)),
         None => Err(StatusCode::NOT_FOUND),
     }
 }

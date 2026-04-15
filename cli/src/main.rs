@@ -44,6 +44,16 @@ enum Commands {
     Health,
 }
 
+/// Returns the PID of the process that spawned this CLI invocation.
+/// When called from a Claude Code hook, the parent is the agent process,
+/// which is what Refresh in the app uses to detect dead sessions.
+/// If invoked through a wrapper shell that exits immediately, this PID
+/// will go stale and Refresh will treat the session as dead.
+fn parent_pid() -> u32 {
+    // SAFETY: getppid is async-signal-safe and always succeeds on POSIX.
+    unsafe { libc::getppid() as u32 }
+}
+
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 struct RegisterBody {
@@ -52,6 +62,7 @@ struct RegisterBody {
     on_click: Option<String>,
     pwd: Option<String>,
     display_name: Option<String>,
+    pid: Option<u32>,
 }
 
 #[derive(Serialize)]
@@ -161,6 +172,7 @@ fn main() {
                 on_click,
                 pwd,
                 display_name: group,
+                pid: Some(parent_pid()),
             };
             ureq::post(format!("{base_url}/register"))
                 .send_json(&body)

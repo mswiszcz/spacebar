@@ -315,7 +315,28 @@ async function init(): Promise<void> {
     sessionState.update(event.payload);
   });
 
+  const refreshPending = new Set<string>();
+
+  await listen<string[]>("sessions-refresh-removed", (event) => {
+    const grid = document.querySelector(".mascot-grid") as HTMLElement;
+    if (!grid) return;
+    for (const id of event.payload) {
+      refreshPending.add(id);
+      const el = grid.querySelector(
+        `[data-session-id="${id}"]`,
+      ) as HTMLElement | null;
+      if (el) el.classList.add("swipe-out");
+    }
+    setTimeout(() => {
+      for (const id of event.payload) {
+        sessionState.remove(id);
+        refreshPending.delete(id);
+      }
+    }, 420);
+  });
+
   await listen<Session>("session-removed", (event) => {
+    if (refreshPending.has(event.payload.sessionId)) return;
     const grid = document.querySelector(".mascot-grid") as HTMLElement;
     if (grid) {
       triggerExit(grid, event.payload.sessionId).then(() => {
