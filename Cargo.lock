@@ -3584,7 +3584,7 @@ dependencies = [
 
 [[package]]
 name = "spacebar"
-version = "0.8.0"
+version = "0.9.0"
 dependencies = [
  "clap",
  "dirs",
@@ -3596,7 +3596,7 @@ dependencies = [
 
 [[package]]
 name = "spacebar-app"
-version = "0.8.0"
+version = "0.9.0"
 dependencies = [
  "axum",
  "block",
