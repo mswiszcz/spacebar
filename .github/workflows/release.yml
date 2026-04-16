@@ -15,17 +15,38 @@ jobs:
   release:
     runs-on: macos-14
     steps:
-      - name: Validate version format
+      - name: Validate inputs
         env:
           VERSION: ${{ inputs.version }}
+          REF: ${{ github.ref }}
         run: |
           if [[ ! "${VERSION}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "::error::Invalid version format '${VERSION}'. Expected X.Y.Z"
             exit 1
           fi
+          if [[ "${REF}" != "refs/heads/main" ]]; then
+            echo "::error::Release must be dispatched from main (got ${REF})"
+            exit 1
+          fi
 
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Preflight — release and tag must not exist
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          if gh release view "v${VERSION}" >/dev/null 2>&1; then
+            echo "::error::Release v${VERSION} already exists. Delete it before re-running."
+            exit 1
+          fi
+          if git ls-remote --exit-code --tags origin "refs/tags/v${VERSION}" >/dev/null 2>&1; then
+            echo "::error::Tag v${VERSION} already exists on remote. Delete it before re-running."
+            exit 1
+          fi
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -78,10 +99,14 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add package.json src-tauri/Cargo.toml cli/Cargo.toml src-tauri/tauri.conf.json install.sh Cargo.lock
-          git diff --cached --quiet && echo "Version already at ${VERSION}, skipping commit" \
-            || git commit -m "chore: bump version to ${VERSION}"
-          git tag -f "v${VERSION}"
-          git push origin main --tags --force
+          if git diff --cached --quiet; then
+            echo "Version already at ${VERSION}, skipping commit"
+          else
+            git commit -m "chore: bump version to ${VERSION}"
+          fi
+          git push origin main
+          git tag "v${VERSION}"
+          git push origin "v${VERSION}"
 
       - name: Build Tauri app
         run: npm run tauri build
